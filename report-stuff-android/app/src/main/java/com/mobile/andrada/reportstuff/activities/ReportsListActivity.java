@@ -13,7 +13,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.MenuItem;
 
 import com.mobile.andrada.reportstuff.R;
-import com.mobile.andrada.reportstuff.adapter.ReportsRecyclerViewAdapter;
+import com.mobile.andrada.reportstuff.adapters.ReportsRecyclerViewAdapter;
 import com.mobile.andrada.reportstuff.db.Report;
 import com.mobile.andrada.reportstuff.model.ReportsViewModel;
 
