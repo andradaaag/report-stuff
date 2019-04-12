@@ -168,7 +168,7 @@ public class ChatActivity extends AppCompatActivity implements
             @Override
             protected void onBindViewHolder(@NonNull final MessageViewHolder viewHolder, int position, @NonNull ChatMessage chatMessage) {
                 mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                if (chatMessage.getText() != null) {
+                if (chatMessage.getText() != null && !chatMessage.getText().isEmpty()) {
                     viewHolder.messageTextView.setText(chatMessage.getText());
                     viewHolder.messageTextView.setVisibility(TextView.VISIBLE);
                     viewHolder.messageImageView.setVisibility(ImageView.GONE);
@@ -371,16 +371,7 @@ public class ChatActivity extends AppCompatActivity implements
                         storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                             @Override
                             public void onSuccess(Uri uri) {
-                                Uri dlUri = uri;
-                                ChatMessage chatMessage = new ChatMessage(
-                                        null,
-                                        mUsername,
-                                        Calendar.getInstance().getTime().toString(),
-                                        mMessageEditText.getText().toString(),
-                                        mPhotoUrl,
-                                        dlUri.toString()
-                                );
-                                mFirebaseDatabaseReference.push().setValue(chatMessage);
+                                mFirebaseDatabaseReference.child(MESSAGES_CHILD).child(key).child("imageUrl").setValue(uri.toString());
                             }
 
 
