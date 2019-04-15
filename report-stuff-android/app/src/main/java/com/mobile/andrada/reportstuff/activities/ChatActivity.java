@@ -53,6 +53,7 @@ import com.mobile.andrada.reportstuff.db.ChatMessage;
 
 import java.util.Calendar;
 
+import butterknife.BindView;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ChatActivity extends AppCompatActivity implements
@@ -69,18 +70,28 @@ public class ChatActivity extends AppCompatActivity implements
     private String mUsername;
     private String mPhotoUrl;
     private SharedPreferences mSharedPreferences;
+    LinearLayoutManager mLinearLayoutManager;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private GoogleApiClient mGoogleApiClient;
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseRecyclerAdapter mFirebaseAdapter;
-    private ProgressBar mProgressBar;
-    private Button mSendButton;
-    private RecyclerView mMessageRecyclerView;
-    private LinearLayoutManager mLinearLayoutManager;
-    private EditText mMessageEditText;
-    private ImageView mAddMessageImageView;
+
+    @BindView(R.id.progressBar)
+    ProgressBar mProgressBar;
+
+    @BindView(R.id.sendButton)
+    Button mSendButton;
+
+    @BindView(R.id.messageRecyclerView)
+    RecyclerView mMessageRecyclerView;
+
+    @BindView(R.id.messageEditText)
+    EditText mMessageEditText;
+
+    @BindView(R.id.addMessageImageView)
+    ImageView mAddMessageImageView;
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
@@ -134,8 +145,6 @@ public class ChatActivity extends AppCompatActivity implements
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .build();
 
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageRecyclerView);
         mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
 
@@ -231,11 +240,8 @@ public class ChatActivity extends AppCompatActivity implements
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
 
-
         //TODO: Maybe add some remote configs
 
-
-        mMessageEditText = (EditText) findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(CHAT_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
         mMessageEditText.addTextChangedListener(new TextWatcher() {
@@ -257,7 +263,6 @@ public class ChatActivity extends AppCompatActivity implements
             }
         });
 
-        mAddMessageImageView = (ImageView) findViewById(R.id.addMessageImageView);
         mAddMessageImageView.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
@@ -269,7 +274,6 @@ public class ChatActivity extends AppCompatActivity implements
             }
         });
 
-        mSendButton = (Button) findViewById(R.id.sendButton);
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
