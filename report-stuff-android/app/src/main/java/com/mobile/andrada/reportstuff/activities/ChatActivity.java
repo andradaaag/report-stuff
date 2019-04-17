@@ -37,6 +37,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -108,7 +109,7 @@ public class ChatActivity extends AppCompatActivity implements
 
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
-        mQuery = mFirestore.collection("messages");
+        mQuery = mFirestore.collection("messages").orderBy("date");
 //                .limit(10);
 
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -199,21 +200,21 @@ public class ChatActivity extends AppCompatActivity implements
             }
         });
 
-//        mSendButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                ChatMessage chatMessage = new ChatMessage(
-//                        null,
-//                        mUsername,
-//                        Calendar.getInstance().getTime().toString(),
-//                        mMessageEditText.getText().toString(),
-//                        mPhotoUrl,
-//                        null
-//                );
-//                mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(chatMessage);
-//                mMessageEditText.setText("");
-//            }
-//        });
+        mSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ChatMessage chatMessage = new ChatMessage(
+                        null,
+                        mUsername,
+                        Calendar.getInstance().getTime().toString(),
+                        mMessageEditText.getText().toString(),
+                        mPhotoUrl,
+                        null
+                );
+                mFirestore.collection(MESSAGES_CHILD).add(chatMessage);
+                mMessageEditText.setText("");
+            }
+        });
     }
 
     @Override
@@ -248,71 +249,69 @@ public class ChatActivity extends AppCompatActivity implements
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
     }
 
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
-//
-//        if (requestCode == REQUEST_IMAGE) {
-//            if (resultCode == RESULT_OK) {
-//                if (data != null) {
-//                    final Uri uri = data.getData();
-//                    Log.d(TAG, "Uri: " + uri.toString());
-//
-//                    ChatMessage tempMessage = new ChatMessage(
-//                            null,
-//                            mUsername,
-//                            Calendar.getInstance().getTime().toString(),
-//                            mMessageEditText.getText().toString(),
-//                            mPhotoUrl,
-//                            LOADING_IMAGE_URL
-//                    );
-//                    mFirebaseDatabaseReference.child(MESSAGES_CHILD).push()
-//                            .setValue(tempMessage, new DatabaseReference.CompletionListener() {
-//                                @Override
-//                                public void onComplete(DatabaseError databaseError,
-//                                                       DatabaseReference databaseReference) {
-//                                    if (databaseError == null) {
-//                                        String key = databaseReference.getKey();
-//                                        StorageReference storageReference =
-//                                                FirebaseStorage.getInstance()
-//                                                        .getReference(mFirebaseUser.getUid())
-//                                                        .child(key)
-//                                                        .child(uri.getLastPathSegment());
-//
-//                                        putImageInStorage(storageReference, uri, key);
-//                                    } else {
-//                                        Log.w(TAG, "Unable to write message to database.",
-//                                                databaseError.toException());
-//                                    }
-//                                }
-//                            });
-//                }
-//            }
-//        }
-//    }
-//
-//    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
-//        storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
-//                new OnCompleteListener<UploadTask.TaskSnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-//                        storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-//                            @Override
-//                            public void onSuccess(Uri uri) {
-//                                mFirebaseDatabaseReference.child(MESSAGES_CHILD).child(key).child("imageUrl").setValue(uri.toString());
-//                            }
-//
-//
-//                        }).addOnFailureListener(new OnFailureListener() {
-//                            @Override
-//                            public void onFailure(@NonNull Exception e) {
-//                                Log.w(TAG, "Image upload task was not successful.", e);
-//                            }
-//                        });
-//                    }
-//                });
-//    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+
+        if (requestCode == REQUEST_IMAGE) {
+            if (resultCode == RESULT_OK) {
+                if (data != null) {
+                    final Uri uri = data.getData();
+                    Log.d(TAG, "Uri: " + uri.toString());
+
+                    ChatMessage tempMessage = new ChatMessage(
+                            null,
+                            mUsername,
+                            Calendar.getInstance().getTime().toString(),
+                            mMessageEditText.getText().toString(),
+                            mPhotoUrl,
+                            LOADING_IMAGE_URL
+                    );
+                    mFirestore.collection(MESSAGES_CHILD).add(tempMessage).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentReference> task) {
+                            if (task.isSuccessful()) {
+                                DocumentReference docRef = task.getResult();
+                                String key = docRef.getId();
+                                StorageReference storageReference =
+                                        FirebaseStorage.getInstance()
+                                                .getReference(mFirebaseUser.getUid())
+                                                .child(key)
+                                                .child(uri.getLastPathSegment());
+
+                                putImageInStorage(storageReference, uri, key);
+                            } else {
+                                Log.w(TAG, "Unable to write message to database.", task.getException());
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
+        storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
+                new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                        storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(Uri uri) {
+                                mFirestore.collection(MESSAGES_CHILD).document(key).update("imageUrl", uri.toString());
+                            }
+
+
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.w(TAG, "Image upload task was not successful.", e);
+                            }
+                        });
+                    }
+                });
+    }
 
     @Override
     public void onMessageSelected(DocumentSnapshot message) {

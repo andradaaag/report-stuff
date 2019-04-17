@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 public class ChatMessage {
     @PrimaryKey
     @ColumnInfo(name = "messageID")
+    // might be unnecessary
     private String id;
     private String location;
     private String name;
