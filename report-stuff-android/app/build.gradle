@@ -21,6 +21,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":player-lib")
 
     testImplementation 'junit:junit:4.12'
 
@@ -55,7 +56,6 @@ dependencies {
     // Firebase
     implementation 'com.google.firebase:firebase-core:16.0.8'
     implementation 'com.google.firebase:firebase-auth:16.2.1'
-    implementation 'com.google.firebase:firebase-database:16.1.0'
     implementation 'com.google.firebase:firebase-storage:16.1.0'
     implementation 'com.google.firebase:firebase-messaging:17.6.0'
 
@@ -64,6 +64,11 @@ dependencies {
 
     // Google
     implementation 'com.google.android.gms:play-services-auth:16.0.1'
+
+    // ExoPlayer library for media player
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.7.3'
+    implementation 'com.google.android.exoplayer:exoplayer-dash:2.7.3'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.7.3'
 
     // Testing dependencies
     androidTestImplementation 'junit:junit:4.12'
