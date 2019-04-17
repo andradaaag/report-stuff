@@ -52,15 +52,17 @@ import butterknife.ButterKnife;
 
 public class ChatActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
-        MessageAdapter.OnMessageSelectedListener {
+        MessageAdapter.OnMessagePlayClickedListener {
 
     public final static String EXTRA_ID = "com.mobile.andrada.reportstuff.activities.EXTRA_ID";
     public final static String TAG = "ChatActivity";
     public static final String MESSAGES_CHILD = "messages";
     public final static String ANONYMOUS = "anonymous";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
-    public static final String CHAT_MSG_LENGTH = "chat_msg_length";
     private static final int REQUEST_IMAGE = 1;
+    private static final int PLAY_MEDIA = 2;
+    public static final String CHAT_MSG_LENGTH = "chat_msg_length";
+    public static final String EXTRA_MEDIA_URI = "extra_media_uri";
     private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
 
     private String mUsername;
@@ -233,7 +235,7 @@ public class ChatActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
+            NavUtils.navigateUpTo(this, new Intent(this, ReportsListActivity.class));
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -256,17 +258,19 @@ public class ChatActivity extends AppCompatActivity implements
                     Log.d(TAG, "Uri: " + uri.toString());
                     String mediaType = "text";
                     if (uri.toString().contains("image")) {
-                        mediaType="image";
-                    } else  if (uri.toString().contains("video")) {
-                        mediaType="video";
+                        mediaType = "image";
+                    } else if (uri.toString().contains("video")) {
+                        mediaType = "video";
                     }
                     addMessageToFirestore(uri, mediaType);
                 }
             }
+        } else if (requestCode == PLAY_MEDIA) {
+
         }
     }
 
-    protected void addMessageToFirestore(final Uri uri, final String mediaType){
+    protected void addMessageToFirestore(final Uri uri, final String mediaType) {
         ChatMessage tempMessage = new ChatMessage(
                 null,
                 mUsername,
@@ -296,7 +300,7 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
-        storageReference.child(mediaType).putFile(uri).addOnCompleteListener(ChatActivity.this,
+        storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
                 new OnCompleteListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
@@ -318,7 +322,10 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onMessageSelected(DocumentSnapshot message) {
-        //TODO: implement if needed
+    public void onMessagePlayClicked(DocumentSnapshot message) {
+        Intent intent = new Intent(this, VideoPlayer.class);
+        ChatMessage chatMessage = message.toObject(ChatMessage.class);
+        intent.putExtra(EXTRA_MEDIA_URI, chatMessage != null ? chatMessage.getMediaUrl() : null);
+        startActivityForResult(intent, PLAY_MEDIA);
     }
 }

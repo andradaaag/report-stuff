@@ -1,5 +1,6 @@
 package com.mobile.andrada.reportstuff.adapters;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.support.annotation.NonNull;
@@ -8,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -32,15 +34,15 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> {
 //    ProgressBar mProgressBar;
 
-    public interface OnMessageSelectedListener {
+    public interface OnMessagePlayClickedListener {
 
-        void onMessageSelected(DocumentSnapshot message);
+        void onMessagePlayClicked(DocumentSnapshot message);
 
     }
 
-    private OnMessageSelectedListener mListener;
+    private OnMessagePlayClickedListener mListener;
 
-    protected MessageAdapter(Query query, OnMessageSelectedListener listener) {
+    protected MessageAdapter(Query query, OnMessagePlayClickedListener listener) {
         super(query);
         mListener = listener;
     }
@@ -67,6 +69,9 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         @BindView(R.id.messageImageView)
         ImageView messageImageView;
 
+        @BindView(R.id.playMessageButton)
+        Button playMessageButton;
+
         @BindView(R.id.messengerTextView)
         TextView messengerTextView;
 
@@ -79,14 +84,14 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
             ButterKnife.bind(this, itemView);
         }
 
-        void bind(final DocumentSnapshot snapshot, final OnMessageSelectedListener listener) {
+        void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
 //            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
             chatMessage = snapshot.toObject(ChatMessage.class);
-            itemView.setOnClickListener(new View.OnClickListener() {
+            playMessageButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (listener != null) {
-                        listener.onMessageSelected(snapshot);
+                        listener.onMessagePlayClicked(snapshot);
                     }
                 }
             });
@@ -128,6 +133,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                 messageTextView.setText(chatMessage.getText());
                 messageTextView.setVisibility(TextView.VISIBLE);
                 messageImageView.setVisibility(ImageView.GONE);
+                playMessageButton.setVisibility(ImageView.GONE);
             }
         }
 
@@ -159,11 +165,14 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                 }
                 messageImageView.setVisibility(ImageView.VISIBLE);
                 messageTextView.setVisibility(TextView.GONE);
+                playMessageButton.setVisibility(ImageView.GONE);
             }
         }
 
         private void handleVideo() {
-            //TODO: handleVideo
+            playMessageButton.setVisibility(Button.VISIBLE);
+            messageTextView.setVisibility(TextView.GONE);
+            messageImageView.setVisibility(ImageView.GONE);
         }
 
         private void handleAudio() {
