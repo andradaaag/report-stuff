@@ -23,9 +23,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -35,8 +33,6 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -208,8 +204,8 @@ public class ChatActivity extends AppCompatActivity implements
                         Calendar.getInstance().getTime().toString(),
                         mMessageEditText.getText().toString(),
                         mPhotoUrl,
-                        null
-                );
+                        null,
+                        "text");
                 mFirestore.collection(MESSAGES_CHILD).add(chatMessage);
                 mMessageEditText.setText("");
             }
@@ -258,47 +254,56 @@ public class ChatActivity extends AppCompatActivity implements
                 if (data != null) {
                     final Uri uri = data.getData();
                     Log.d(TAG, "Uri: " + uri.toString());
-
-                    ChatMessage tempMessage = new ChatMessage(
-                            null,
-                            mUsername,
-                            Calendar.getInstance().getTime().toString(),
-                            mMessageEditText.getText().toString(),
-                            mPhotoUrl,
-                            LOADING_IMAGE_URL
-                    );
-                    mFirestore.collection(MESSAGES_CHILD).add(tempMessage).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
-                        @Override
-                        public void onComplete(@NonNull Task<DocumentReference> task) {
-                            if (task.isSuccessful()) {
-                                DocumentReference docRef = task.getResult();
-                                String key = docRef.getId();
-                                StorageReference storageReference =
-                                        FirebaseStorage.getInstance()
-                                                .getReference(mFirebaseUser.getUid())
-                                                .child(key)
-                                                .child(uri.getLastPathSegment());
-
-                                putImageInStorage(storageReference, uri, key);
-                            } else {
-                                Log.w(TAG, "Unable to write message to database.", task.getException());
-                            }
-                        }
-                    });
+                    String mediaType = "text";
+                    if (uri.toString().contains("image")) {
+                        mediaType="image";
+                    } else  if (uri.toString().contains("video")) {
+                        mediaType="video";
+                    }
+                    addMessageToFirestore(uri, mediaType);
                 }
             }
         }
     }
 
-    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key) {
-        storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
+    protected void addMessageToFirestore(final Uri uri, final String mediaType){
+        ChatMessage tempMessage = new ChatMessage(
+                null,
+                mUsername,
+                Calendar.getInstance().getTime().toString(),
+                mMessageEditText.getText().toString(),
+                mPhotoUrl,
+                LOADING_IMAGE_URL,
+                mediaType);
+        mFirestore.collection(MESSAGES_CHILD).add(tempMessage).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentReference> task) {
+                if (task.isSuccessful()) {
+                    DocumentReference docRef = task.getResult();
+                    String key = docRef.getId();
+                    StorageReference storageReference =
+                            FirebaseStorage.getInstance()
+                                    .getReference(mFirebaseUser.getUid())
+                                    .child(key)
+                                    .child(uri.getLastPathSegment());
+
+                    putImageInStorage(storageReference, uri, key, mediaType);
+                } else {
+                    Log.w(TAG, "Unable to write message to database.", task.getException());
+                }
+            }
+        });
+    }
+
+    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
+        storageReference.child(mediaType).putFile(uri).addOnCompleteListener(ChatActivity.this,
                 new OnCompleteListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
                         storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                             @Override
                             public void onSuccess(Uri uri) {
-                                mFirestore.collection(MESSAGES_CHILD).document(key).update("imageUrl", uri.toString());
+                                mFirestore.collection(MESSAGES_CHILD).document(key).update("mediaUrl", uri.toString());
                             }
 
 

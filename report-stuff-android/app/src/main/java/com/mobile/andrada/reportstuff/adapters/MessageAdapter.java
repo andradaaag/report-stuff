@@ -40,24 +40,26 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
 
     private OnMessageSelectedListener mListener;
 
-    public MessageAdapter(Query query, OnMessageSelectedListener listener) {
+    protected MessageAdapter(Query query, OnMessageSelectedListener listener) {
         super(query);
         mListener = listener;
     }
 
+    @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 //        mProgressBar = parent.findViewById(R.id.progressBar);
         return new ViewHolder(inflater.inflate(R.layout.item_message, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         holder.bind(getSnapshot(position), mListener);
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
+        ChatMessage chatMessage;
 
         @BindView(R.id.messageTextView)
         TextView messageTextView;
@@ -72,18 +74,14 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         CircleImageView messengerImageView;
 
 
-        public ViewHolder(View itemView) {
+        ViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
         }
 
-        public void bind(final DocumentSnapshot snapshot,
-                         final OnMessageSelectedListener listener) {
-
-            ChatMessage chatMessage = snapshot.toObject(ChatMessage.class);
-            Resources resources = itemView.getResources();
-
-            // Click listener
+        void bind(final DocumentSnapshot snapshot, final OnMessageSelectedListener listener) {
+//            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+            chatMessage = snapshot.toObject(ChatMessage.class);
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -93,13 +91,49 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                 }
             });
 
-//            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+            handleMessenger();
+            switch (chatMessage.getMediaType()) {
+                case "text":
+                    handleText();
+                    break;
+                case "image":
+                    handleImage();
+                    break;
+                case "video":
+                    handleVideo();
+                    break;
+                case "audio":
+                    handleAudio();
+                    break;
+                default:
+                    handleText();
+                    break;
+            }
+        }
+
+        private void handleMessenger() {
+            Resources resources = itemView.getResources();
+            messengerTextView.setText(chatMessage.getName());
+            if (chatMessage.getPhotoUrl() == null) {
+                messengerImageView.setImageDrawable(resources.getDrawable(R.drawable.ic_account_circle_black));
+            } else {
+                Glide.with(messengerImageView.getContext())
+                        .load(chatMessage.getPhotoUrl())
+                        .into(messengerImageView);
+            }
+        }
+
+        private void handleText() {
             if (chatMessage.getText() != null && !chatMessage.getText().isEmpty()) {
                 messageTextView.setText(chatMessage.getText());
                 messageTextView.setVisibility(TextView.VISIBLE);
                 messageImageView.setVisibility(ImageView.GONE);
-            } else if (chatMessage.getImageUrl() != null) {
-                String imageUrl = chatMessage.getImageUrl();
+            }
+        }
+
+        private void handleImage() {
+            if (chatMessage.getMediaUrl() != null) {
+                String imageUrl = chatMessage.getMediaUrl();
                 if (imageUrl.startsWith("gs://")) {
                     StorageReference storageReference = FirebaseStorage.getInstance()
                             .getReferenceFromUrl(imageUrl);
@@ -120,21 +154,20 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                             });
                 } else {
                     Glide.with(messageImageView.getContext())
-                            .load(chatMessage.getImageUrl())
+                            .load(chatMessage.getMediaUrl())
                             .into(messageImageView);
                 }
                 messageImageView.setVisibility(ImageView.VISIBLE);
                 messageTextView.setVisibility(TextView.GONE);
             }
+        }
 
-            messengerTextView.setText(chatMessage.getName());
-            if (chatMessage.getPhotoUrl() == null) {
-                messengerImageView.setImageDrawable(resources.getDrawable(R.drawable.ic_account_circle_black));
-            } else {
-                Glide.with(messengerImageView.getContext())
-                        .load(chatMessage.getPhotoUrl())
-                        .into(messengerImageView);
-            }
+        private void handleVideo() {
+            //TODO: handleVideo
+        }
+
+        private void handleAudio() {
+            //TODO: handleAudio
         }
     }
 }

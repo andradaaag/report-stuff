@@ -16,18 +16,20 @@ public class ChatMessage {
     private String date;
     private String text;
     private String photoUrl;
-    private String imageUrl;
+    private String mediaUrl;
+    private String mediaType;
 
     public ChatMessage() {
     }
 
-    public ChatMessage(String location, String name, String date, String text, String photoUrl, String imageUrl) {
+    public ChatMessage(String location, String name, String date, String text, String photoUrl, String mediaUrl, String mediaType) {
         this.location = location;
         this.name = name;
         this.date = date;
         this.text = text;
         this.photoUrl = photoUrl;
-        this.imageUrl = imageUrl;
+        this.mediaUrl = mediaUrl;
+        this.mediaType = mediaType;
     }
 
     @NonNull
@@ -79,11 +81,19 @@ public class ChatMessage {
         this.photoUrl = photoUrl;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
+    public String getMediaUrl() {
+        return mediaUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
     }
 }
