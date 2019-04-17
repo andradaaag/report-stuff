@@ -67,11 +67,6 @@ dependencies {
     // Google
     implementation 'com.google.android.gms:play-services-auth:16.0.1'
 
-    // ExoPlayer library for media player
-    implementation 'com.google.android.exoplayer:exoplayer-core:2.7.3'
-    implementation 'com.google.android.exoplayer:exoplayer-dash:2.7.3'
-    implementation 'com.google.android.exoplayer:exoplayer-ui:2.7.3'
-
     // Testing dependencies
     androidTestImplementation 'junit:junit:4.12'
     androidTestImplementation 'android.arch.persistence.room:testing:1.1.1'
