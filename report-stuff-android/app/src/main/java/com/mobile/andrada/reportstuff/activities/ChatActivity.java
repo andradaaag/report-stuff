@@ -261,11 +261,13 @@ public class ChatActivity extends AppCompatActivity implements
                     final Uri uri = data.getData();
                     Log.d(TAG, "Uri: " + uri.toString());
 
-                    String mediaType = "audio";
+                    String mediaType = "document";
                     if (uri.toString().contains("image")) {
                         mediaType = "image";
                     } else if (uri.toString().contains("video")) {
                         mediaType = "video";
+                    } else if (uri.toString().contains("audio")) {
+                        mediaType = "audio";
                     }
                     addMessageToFirestore(uri, mediaType);
                 }
@@ -294,7 +296,7 @@ public class ChatActivity extends AppCompatActivity implements
                                     .child(key)
                                     .child(uri.getLastPathSegment());
 
-                    putImageInStorage(storageReference, uri, key, mediaType);
+                    putMediaInStorage(storageReference, uri, key, mediaType);
                 } else {
                     Log.w(TAG, "Unable to write message to database.", task.getException());
                 }
@@ -302,7 +304,7 @@ public class ChatActivity extends AppCompatActivity implements
         });
     }
 
-    private void putImageInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
+    private void putMediaInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
         storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
                 new OnCompleteListener<UploadTask.TaskSnapshot>() {
                     @Override
