@@ -5,6 +5,8 @@ import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
+import java.util.Date;
+
 @Entity(tableName = "messages")
 public class ChatMessage {
     @PrimaryKey
@@ -13,7 +15,7 @@ public class ChatMessage {
     private String id;
     private String location;
     private String name;
-    private String date;
+    private Date date;
     private String text;
     private String photoUrl;
     private String mediaUrl;
@@ -22,7 +24,7 @@ public class ChatMessage {
     public ChatMessage() {
     }
 
-    public ChatMessage(String location, String name, String date, String text, String photoUrl, String mediaUrl, String mediaType) {
+    public ChatMessage(String location, String name, Date date, String text, String photoUrl, String mediaUrl, String mediaType) {
         this.location = location;
         this.name = name;
         this.date = date;
@@ -57,11 +59,11 @@ public class ChatMessage {
         this.name = name;
     }
 
-    public String getDate() {
+    public Date getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public void setDate(Date date) {
         this.date = date;
     }
 

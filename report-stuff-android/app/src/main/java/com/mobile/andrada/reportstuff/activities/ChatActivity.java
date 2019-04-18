@@ -207,7 +207,7 @@ public class ChatActivity extends AppCompatActivity implements
                 ChatMessage chatMessage = new ChatMessage(
                         null,
                         mUsername,
-                        Calendar.getInstance().getTime().toString(),
+                        Calendar.getInstance().getTime(),
                         mMessageEditText.getText().toString(),
                         mPhotoUrl,
                         null,
@@ -277,7 +277,7 @@ public class ChatActivity extends AppCompatActivity implements
         ChatMessage tempMessage = new ChatMessage(
                 null,
                 mUsername,
-                Calendar.getInstance().getTime().toString(),
+                Calendar.getInstance().getTime(),
                 mMessageEditText.getText().toString(),
                 mPhotoUrl,
                 LOADING_IMAGE_URL,
