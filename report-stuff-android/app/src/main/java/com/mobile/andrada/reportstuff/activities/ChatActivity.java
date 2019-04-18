@@ -2,6 +2,7 @@ package com.mobile.andrada.reportstuff.activities;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +21,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -68,7 +70,9 @@ public class ChatActivity extends AppCompatActivity implements
     private String mUsername;
     private String mPhotoUrl;
     private SharedPreferences mSharedPreferences;
-    LinearLayoutManager mLinearLayoutManager;
+    private LinearLayoutManager mLinearLayoutManager;
+
+    private MediaPlayer mediaPlayer;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -256,7 +260,10 @@ public class ChatActivity extends AppCompatActivity implements
                 if (data != null) {
                     final Uri uri = data.getData();
                     Log.d(TAG, "Uri: " + uri.toString());
-                    String mediaType = "text";
+
+                    String mimeType = getMimeType(uri.toString());
+
+                    String mediaType = "audio";
                     if (uri.toString().contains("image")) {
                         mediaType = "image";
                     } else if (uri.toString().contains("video")) {
@@ -268,6 +275,11 @@ public class ChatActivity extends AppCompatActivity implements
         } else if (requestCode == PLAY_MEDIA) {
 
         }
+    }
+
+    private static String getMimeType(String fileUrl) {
+        String extension = MimeTypeMap.getFileExtensionFromUrl(fileUrl);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
     }
 
     protected void addMessageToFirestore(final Uri uri, final String mediaType) {
@@ -322,10 +334,31 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onMessagePlayClicked(DocumentSnapshot message) {
+    public void onOpenVideoClicked(DocumentSnapshot message) {
         Intent intent = new Intent(this, VideoPlayer.class);
         ChatMessage chatMessage = message.toObject(ChatMessage.class);
         intent.putExtra(EXTRA_MEDIA_URI, chatMessage != null ? chatMessage.getMediaUrl() : null);
         startActivityForResult(intent, PLAY_MEDIA);
+    }
+
+    @Override
+    public void onPlayAudioClicked(DocumentSnapshot message) {
+        mediaPlayer = new MediaPlayer();
+        ChatMessage chatMessage = message.toObject(ChatMessage.class);
+
+        try {
+            mediaPlayer.setDataSource(chatMessage != null ? chatMessage.getMediaUrl() : null);
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onPauseAudioClicked(DocumentSnapshot message) {
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
+        }
     }
 }

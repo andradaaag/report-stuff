@@ -26,23 +26,10 @@ public class VideoPlayer extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_player);
 
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setDisplayShowHomeEnabled(true);
-        }
-
         String mediaUri = Objects.requireNonNull(getIntent().getExtras()).getString(EXTRA_MEDIA_URI);
 
         VideoView videoView = findViewById(R.id.video_view);
         Uri uri = Uri.parse(mediaUri);
-//        videoView.setVideoURI(uri);
-//
-//        MediaController mediaController = new MediaController(this);
-//        videoView.setMediaController(mediaController);
-//        mediaController.setAnchorView(videoView);
-
-        videoView = (VideoView)findViewById(R.id.video_view);
         videoView.setVideoURI(uri);
         videoView.setMediaController(new MediaController(this));
         videoView.requestFocus();

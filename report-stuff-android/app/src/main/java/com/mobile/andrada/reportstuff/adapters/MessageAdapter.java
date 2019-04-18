@@ -1,6 +1,5 @@
 package com.mobile.andrada.reportstuff.adapters;
 
-import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.support.annotation.NonNull;
@@ -36,7 +35,9 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
 
     public interface OnMessagePlayClickedListener {
 
-        void onMessagePlayClicked(DocumentSnapshot message);
+        void onOpenVideoClicked(DocumentSnapshot message);
+        void onPlayAudioClicked(DocumentSnapshot message);
+        void onPauseAudioClicked(DocumentSnapshot message);
 
     }
 
@@ -69,8 +70,14 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         @BindView(R.id.messageImageView)
         ImageView messageImageView;
 
-        @BindView(R.id.playMessageButton)
-        Button playMessageButton;
+        @BindView(R.id.openVideoButton)
+        Button openVideoButton;
+
+        @BindView(R.id.playAudioButton)
+        ImageView playAudioButton;
+
+        @BindView(R.id.pauseAudioButton)
+        ImageView pauseAudioButton;
 
         @BindView(R.id.messengerTextView)
         TextView messengerTextView;
@@ -87,12 +94,32 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
 //            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
             chatMessage = snapshot.toObject(ChatMessage.class);
-            playMessageButton.setOnClickListener(new View.OnClickListener() {
+            openVideoButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (listener != null) {
-                        listener.onMessagePlayClicked(snapshot);
+                        listener.onOpenVideoClicked(snapshot);
                     }
+                }
+            });
+            playAudioButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (listener != null) {
+                        listener.onPlayAudioClicked(snapshot);
+                    }
+                    pauseAudioButton.setVisibility(Button.VISIBLE);
+                    playAudioButton.setVisibility(Button.GONE);
+                }
+            });
+            pauseAudioButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (listener != null) {
+                        listener.onPauseAudioClicked(snapshot);
+                    }
+                    pauseAudioButton.setVisibility(Button.GONE);
+                    playAudioButton.setVisibility(Button.VISIBLE);
                 }
             });
 
@@ -132,8 +159,6 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
             if (chatMessage.getText() != null && !chatMessage.getText().isEmpty()) {
                 messageTextView.setText(chatMessage.getText());
                 messageTextView.setVisibility(TextView.VISIBLE);
-                messageImageView.setVisibility(ImageView.GONE);
-                playMessageButton.setVisibility(ImageView.GONE);
             }
         }
 
@@ -165,18 +190,17 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                 }
                 messageImageView.setVisibility(ImageView.VISIBLE);
                 messageTextView.setVisibility(TextView.GONE);
-                playMessageButton.setVisibility(ImageView.GONE);
             }
         }
 
         private void handleVideo() {
-            playMessageButton.setVisibility(Button.VISIBLE);
+            openVideoButton.setVisibility(Button.VISIBLE);
             messageTextView.setVisibility(TextView.GONE);
-            messageImageView.setVisibility(ImageView.GONE);
         }
 
         private void handleAudio() {
-            //TODO: handleAudio
+            playAudioButton.setVisibility(Button.VISIBLE);
+            messageTextView.setVisibility(TextView.GONE);
         }
     }
 }
