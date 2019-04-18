@@ -280,7 +280,7 @@ public class ChatActivity extends AppCompatActivity implements
                 Calendar.getInstance().getTime(),
                 mMessageEditText.getText().toString(),
                 mPhotoUrl,
-                LOADING_IMAGE_URL,
+                null,
                 mediaType);
         mFirestore.collection(MESSAGES_CHILD).add(tempMessage).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
             @Override
@@ -328,7 +328,11 @@ public class ChatActivity extends AppCompatActivity implements
     public void onOpenVideoClicked(DocumentSnapshot message) {
         Intent intent = new Intent(this, VideoPlayer.class);
         ChatMessage chatMessage = message.toObject(ChatMessage.class);
-        intent.putExtra(EXTRA_MEDIA_URI, chatMessage != null ? chatMessage.getMediaUrl() : null);
+        String uriString = chatMessage.getMediaUrl();
+        if (uriString == null)
+            return;
+
+        intent.putExtra(EXTRA_MEDIA_URI, uriString);
         startActivityForResult(intent, PLAY_MEDIA);
     }
 
