@@ -261,8 +261,6 @@ public class ChatActivity extends AppCompatActivity implements
                     final Uri uri = data.getData();
                     Log.d(TAG, "Uri: " + uri.toString());
 
-                    String mimeType = getMimeType(uri.toString());
-
                     String mediaType = "audio";
                     if (uri.toString().contains("image")) {
                         mediaType = "image";
@@ -272,14 +270,7 @@ public class ChatActivity extends AppCompatActivity implements
                     addMessageToFirestore(uri, mediaType);
                 }
             }
-        } else if (requestCode == PLAY_MEDIA) {
-
         }
-    }
-
-    private static String getMimeType(String fileUrl) {
-        String extension = MimeTypeMap.getFileExtensionFromUrl(fileUrl);
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
     }
 
     protected void addMessageToFirestore(final Uri uri, final String mediaType) {
