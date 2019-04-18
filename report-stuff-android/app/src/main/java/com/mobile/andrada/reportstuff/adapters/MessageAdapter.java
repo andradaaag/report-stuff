@@ -38,6 +38,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         void onOpenVideoClicked(DocumentSnapshot message);
         void onPlayAudioClicked(DocumentSnapshot message);
         void onPauseAudioClicked(DocumentSnapshot message);
+        void onStopAudioClicked(DocumentSnapshot message);
 
     }
 
@@ -79,6 +80,9 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         @BindView(R.id.pauseAudioButton)
         ImageView pauseAudioButton;
 
+        @BindView(R.id.stopAudioButton)
+        ImageView stopAudioButton;
+
         @BindView(R.id.messengerTextView)
         TextView messengerTextView;
 
@@ -109,6 +113,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                         listener.onPlayAudioClicked(snapshot);
                     }
                     pauseAudioButton.setVisibility(Button.VISIBLE);
+                    stopAudioButton.setVisibility(Button.VISIBLE);
                     playAudioButton.setVisibility(Button.GONE);
                 }
             });
@@ -118,8 +123,20 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                     if (listener != null) {
                         listener.onPauseAudioClicked(snapshot);
                     }
-                    pauseAudioButton.setVisibility(Button.GONE);
                     playAudioButton.setVisibility(Button.VISIBLE);
+                    stopAudioButton.setVisibility(Button.VISIBLE);
+                    pauseAudioButton.setVisibility(Button.GONE);
+                }
+            });
+            stopAudioButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (listener != null) {
+                        listener.onStopAudioClicked(snapshot);
+                    }
+                    playAudioButton.setVisibility(Button.VISIBLE);
+                    pauseAudioButton.setVisibility(Button.GONE);
+                    stopAudioButton.setVisibility(Button.GONE);
                 }
             });
 

@@ -334,6 +334,10 @@ public class ChatActivity extends AppCompatActivity implements
 
     @Override
     public void onPlayAudioClicked(DocumentSnapshot message) {
+        if (mediaPlayer != null) {
+            mediaPlayer.start();
+            return;
+        }
         mediaPlayer = new MediaPlayer();
         ChatMessage chatMessage = message.toObject(ChatMessage.class);
 
@@ -350,6 +354,14 @@ public class ChatActivity extends AppCompatActivity implements
     public void onPauseAudioClicked(DocumentSnapshot message) {
         if (mediaPlayer != null) {
             mediaPlayer.pause();
+        }
+    }
+
+    @Override
+    public void onStopAudioClicked(DocumentSnapshot message) {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer = null;
         }
     }
 }
