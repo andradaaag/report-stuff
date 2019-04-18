@@ -20,6 +20,7 @@ import com.mobile.andrada.reportstuff.model.ReportsViewModel;
 import java.util.List;
 
 public class ReportsListActivity extends AppCompatActivity {
+    private static final int ENTER_CHAT = 1;
     private ReportsViewModel reportsViewModel;
     private ReportsRecyclerViewAdapter reportsRecyclerViewAdapter;
 
@@ -55,7 +56,7 @@ public class ReportsListActivity extends AppCompatActivity {
             public void onItemClick(Report report) {
                 Intent intent = new Intent(ReportsListActivity.this, ChatActivity.class);
                 intent.putExtra(ChatActivity.EXTRA_ID, report.getId());
-                startActivity(intent);
+                startActivityForResult(intent, ENTER_CHAT);
             }
         });
     }
