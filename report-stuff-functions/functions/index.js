@@ -29,3 +29,49 @@ async function grantPolicemanRole(email) {
         policeman: true
     });
 }
+exports.makeFirefighter = functions.https.onCall((data, context) => {
+    if (context.auth.token.firefighter !== true) {
+        return {
+            error: "Request not authorized. User must be a firefighter to fulfill request."
+        };
+    };
+    const email = data.email;
+    return grantFirefighterRole(email).then(() => {
+        return {
+            result: `Request fulfilled! ${email} is now a firefighter.`
+        };
+    });
+});
+
+async function grantFirefighterRole(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    if (user.customClaims && user.customClaims.firefighter === true) {
+        return;
+    }
+    return admin.auth().setCustomUserClaims(user.uid, {
+        firefighter: true
+    });
+}
+exports.makeSmurd = functions.https.onCall((data, context) => {
+    if (context.auth.token.smurd !== true) {
+        return {
+            error: "Request not authorized. User must be a smurd to fulfill request."
+        };
+    };
+    const email = data.email;
+    return grantSmurdRole(email).then(() => {
+        return {
+            result: `Request fulfilled! ${email} is now a smurd.`
+        };
+    });
+});
+
+async function grantSmurdRole(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    if (user.customClaims && user.customClaims.smurd === true) {
+        return;
+    }
+    return admin.auth().setCustomUserClaims(user.uid, {
+        smurd: true
+    });
+}
