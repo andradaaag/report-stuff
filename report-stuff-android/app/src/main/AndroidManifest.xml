@@ -14,16 +14,16 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning,UnusedAttribute">
-        <activity android:name=".activities.ChatActivity">
+        <activity android:name=".activities.ChatActivity" />
+        <activity android:name=".activities.SignInActivity" />
+        <activity android:name=".activities.ReportsListActivity" />
+        <activity android:name=".activities.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.SignInActivity" />
-        <activity android:name=".activities.ReportsListActivity" />
-        <activity android:name=".activities.MainActivity" />
 
         <service
             android:name=".services.MyFirebaseMessagingService"
@@ -33,7 +33,7 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".activities.VideoPlayer"></activity>
+        <activity android:name=".activities.VideoPlayer" />
     </application>
 
 </manifest>

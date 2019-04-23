@@ -21,7 +21,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.activities.ChatActivity;
-import com.mobile.andrada.reportstuff.db.ChatMessage;
+import com.mobile.andrada.reportstuff.firestore.Message;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -63,7 +63,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        ChatMessage chatMessage;
+        Message message;
 
         @BindView(R.id.messageTextView)
         TextView messageTextView;
@@ -97,7 +97,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
 
         void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
 //            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-            chatMessage = snapshot.toObject(ChatMessage.class);
+            message = snapshot.toObject(Message.class);
             openVideoButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -141,7 +141,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
             });
 
             handleMessenger();
-            switch (chatMessage.getMediaType()) {
+            switch (message.getMediaType()) {
                 case "text":
                     handleText();
                     break;
@@ -162,26 +162,26 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
 
         private void handleMessenger() {
             Resources resources = itemView.getResources();
-            messengerTextView.setText(chatMessage.getName());
-            if (chatMessage.getPhotoUrl() == null) {
+            messengerTextView.setText(message.getName());
+            if (message.getPhotoUrl() == null) {
                 messengerImageView.setImageDrawable(resources.getDrawable(R.drawable.ic_account_circle_black));
             } else {
                 Glide.with(messengerImageView.getContext())
-                        .load(chatMessage.getPhotoUrl())
+                        .load(message.getPhotoUrl())
                         .into(messengerImageView);
             }
         }
 
         private void handleText() {
-            if (chatMessage.getText() != null && !chatMessage.getText().isEmpty()) {
-                messageTextView.setText(chatMessage.getText());
+            if (message.getText() != null && !message.getText().isEmpty()) {
+                messageTextView.setText(message.getText());
                 messageTextView.setVisibility(TextView.VISIBLE);
             }
         }
 
         private void handleImage() {
-            if (chatMessage.getMediaUrl() != null) {
-                String imageUrl = chatMessage.getMediaUrl();
+            if (message.getMediaUrl() != null) {
+                String imageUrl = message.getMediaUrl();
                 if (imageUrl.startsWith("gs://")) {
                     StorageReference storageReference = FirebaseStorage.getInstance()
                             .getReferenceFromUrl(imageUrl);
@@ -202,7 +202,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                             });
                 } else {
                     Glide.with(messageImageView.getContext())
-                            .load(chatMessage.getMediaUrl())
+                            .load(message.getMediaUrl())
                             .into(messageImageView);
                 }
                 messageImageView.setVisibility(ImageView.VISIBLE);
