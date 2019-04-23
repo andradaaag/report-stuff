@@ -26,18 +26,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:baselineAligned="false"
+            android:visibility="gone"
             android:text="New Reports" />
 
         <Button
             android:id="@+id/activeReportsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:text="Active Reports" />
 
         <Button
             android:id="@+id/closedReportsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:text="Closed Reports" />
     </LinearLayout>
 
