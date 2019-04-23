@@ -8,7 +8,12 @@ import android.widget.Button;
 
 import com.mobile.andrada.reportstuff.R;
 
+import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
+
 public class MainActivity extends AppCompatActivity {
+    private static final int NEW_REPORTS = 1;
+    private static final int ACTIVE_REPORTS = 2;
+    private static final int CLOSED_REPORTS = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,15 +24,19 @@ public class MainActivity extends AppCompatActivity {
         newReportsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ReportsListActivity.class));
+                Intent intent = new Intent(MainActivity.this, ReportsListActivity.class);
+                intent.putExtra(REPORTS_STATUS, "new");
+                startActivityForResult(intent, NEW_REPORTS);
             }
         });
 
-        Button openedReportsButton = findViewById(R.id.openedReportsButton);
+        Button openedReportsButton = findViewById(R.id.activeReportsButton);
         openedReportsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ReportsListActivity.class));
+                Intent intent = new Intent(MainActivity.this, ReportsListActivity.class);
+                intent.putExtra(REPORTS_STATUS, "active");
+                startActivityForResult(intent, ACTIVE_REPORTS);
             }
         });
 
@@ -35,7 +44,9 @@ public class MainActivity extends AppCompatActivity {
         closedReportsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ReportsListActivity.class));
+                Intent intent = new Intent(MainActivity.this, ReportsListActivity.class);
+                intent.putExtra(REPORTS_STATUS, "closed");
+                startActivityForResult(intent, CLOSED_REPORTS);
             }
         });
     }

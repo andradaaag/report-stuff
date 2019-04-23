@@ -29,10 +29,10 @@
             android:text="New Reports" />
 
         <Button
-            android:id="@+id/openedReportsButton"
+            android:id="@+id/activeReportsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Opened Reports" />
+            android:text="Active Reports" />
 
         <Button
             android:id="@+id/closedReportsButton"
