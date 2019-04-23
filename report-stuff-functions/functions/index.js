@@ -7,11 +7,12 @@ admin.initializeApp();
 
 
 exports.makePoliceman = functions.https.onCall((data, context) => {
-    if (context.auth.token.policeman !== true) {
-        return {
-            error: "Request not authorized. User must be a policeman to fulfill request."
-        };
-    };
+    // Commented for development purposes
+    // if (context.auth.token.policeman !== true) {
+    //     return {
+    //         error: "Request not authorized. User must be a policeman to fulfill request."
+    //     };
+    // }
     const email = data.email;
     return grantPolicemanRole(email).then(() => {
         return {
@@ -30,11 +31,12 @@ async function grantPolicemanRole(email) {
     });
 }
 exports.makeFirefighter = functions.https.onCall((data, context) => {
-    if (context.auth.token.firefighter !== true) {
-        return {
-            error: "Request not authorized. User must be a firefighter to fulfill request."
-        };
-    };
+    // Commented for development purposes
+    // if (context.auth.token.firefighter !== true) {
+    //     return {
+    //         error: "Request not authorized. User must be a firefighter to fulfill request."
+    //     };
+    // }
     const email = data.email;
     return grantFirefighterRole(email).then(() => {
         return {
@@ -53,11 +55,12 @@ async function grantFirefighterRole(email) {
     });
 }
 exports.makeSmurd = functions.https.onCall((data, context) => {
-    if (context.auth.token.smurd !== true) {
-        return {
-            error: "Request not authorized. User must be a smurd to fulfill request."
-        };
-    };
+    // Commented for development purposes
+    // if (context.auth.token.smurd !== true) {
+    //     return {
+    //         error: "Request not authorized. User must be a smurd to fulfill request."
+    //     };
+    // }
     const email = data.email;
     return grantSmurdRole(email).then(() => {
         return {
