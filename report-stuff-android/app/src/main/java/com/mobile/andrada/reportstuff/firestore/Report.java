@@ -5,16 +5,19 @@ import java.util.List;
 
 public class Report {
     private List<String> activeUsers;
+    private String citizenName;
     private String lastLocation;
     private Date lastTime;
     private List<String> openedBy;
     private String status;
+    private String rid;
 
     public Report() {
     }
 
-    public Report(List<String> activeUsers, String lastLocation, Date lastTime, List<String> openedBy, String status) {
+    public Report(List<String> activeUsers, String citizenName, String lastLocation, Date lastTime, List<String> openedBy, String status) {
         this.activeUsers = activeUsers;
+        this.citizenName = citizenName;
         this.lastLocation = lastLocation;
         this.lastTime = lastTime;
         this.openedBy = openedBy;
@@ -27,6 +30,14 @@ public class Report {
 
     public void setActiveUsers(List<String> activeUsers) {
         this.activeUsers = activeUsers;
+    }
+
+    public String getCitizenName() {
+        return citizenName;
+    }
+
+    public void setCitizenName(String citizenName) {
+        this.citizenName = citizenName;
     }
 
     public String getLastLocation() {
@@ -65,10 +76,19 @@ public class Report {
     public String toString() {
         return "Report{" +
                 "activeUsers=" + activeUsers +
+                ", citizenName='" + citizenName + '\'' +
                 ", lastLocation='" + lastLocation + '\'' +
                 ", lastTime=" + lastTime +
                 ", openedBy=" + openedBy +
                 ", status='" + status + '\'' +
                 '}';
+    }
+
+    public String getRid() {
+        return rid;
+    }
+
+    public void setRid(String rid) {
+        this.rid = rid;
     }
 }
