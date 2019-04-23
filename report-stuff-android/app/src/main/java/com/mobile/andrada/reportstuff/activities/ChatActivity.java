@@ -21,7 +21,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -52,11 +51,13 @@ import java.util.Calendar;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
+
 public class ChatActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         MessageAdapter.OnMessagePlayClickedListener {
 
-    public final static String EXTRA_ID = "com.mobile.andrada.reportstuff.activities.EXTRA_ID";
+    public final static String REPORT_ID = "report_id";
     public final static String TAG = "ChatActivity";
     public static final String MESSAGES_CHILD = "messages";
     public final static String ANONYMOUS = "anonymous";
@@ -65,9 +66,9 @@ public class ChatActivity extends AppCompatActivity implements
     private static final int PLAY_MEDIA = 2;
     public static final String CHAT_MSG_LENGTH = "chat_msg_length";
     public static final String EXTRA_MEDIA_URI = "extra_media_uri";
-    private static final String LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif";
 
-    private String mUsername;
+    private String mDisplayName;
+    private String mEmail;
     private String mPhotoUrl;
     private SharedPreferences mSharedPreferences;
     private LinearLayoutManager mLinearLayoutManager;
@@ -109,13 +110,8 @@ public class ChatActivity extends AppCompatActivity implements
             actionBar.setDisplayShowHomeEnabled(true);
         }
 
-        FirebaseFirestore.setLoggingEnabled(true);
-        mFirestore = FirebaseFirestore.getInstance();
-        mQuery = mFirestore.collection("messages").orderBy("date");
-//                .limit(10);
-
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        mUsername = ANONYMOUS;
+        mDisplayName = ANONYMOUS;
 
         // Initialize Firebase Auth
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -127,7 +123,8 @@ public class ChatActivity extends AppCompatActivity implements
             finish();
             return;
         } else {
-            mUsername = mFirebaseUser.getDisplayName();
+            mDisplayName = mFirebaseUser.getDisplayName();
+            mEmail = mFirebaseUser.getEmail();
             if (mFirebaseUser.getPhotoUrl() != null) {
                 mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
             }
@@ -139,9 +136,24 @@ public class ChatActivity extends AppCompatActivity implements
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .build();
 
-        if (mQuery == null) {
-            Log.w(TAG, "No query, not initializing RecyclerView");
-        }
+        // Get chat from firestore
+        FirebaseFirestore.setLoggingEnabled(true);
+        mFirestore = FirebaseFirestore.getInstance();
+
+//        mFirestore.collection("reports")
+//                .whereArrayContains("activeUsers", mEmail)
+//                .whereEqualTo("status", "active")
+//                .limit(1).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+//            @Override
+//            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+//                QuerySnapshot reports = task.getResult();
+//                String reportID = reports != null ? reports.getDocuments().get(0).getId() : null;
+//            }
+//        });
+
+        String reportId = getIntent().getStringExtra(REPORT_ID);
+        mQuery = mFirestore.collection("reports")
+                .document(reportId).collection("messages").orderBy("time");
 
         mAdapter = new MessageAdapter(mQuery, this) {
 
@@ -206,7 +218,7 @@ public class ChatActivity extends AppCompatActivity implements
             public void onClick(View view) {
                 ChatMessage chatMessage = new ChatMessage(
                         null,
-                        mUsername,
+                        mDisplayName,
                         Calendar.getInstance().getTime(),
                         mMessageEditText.getText().toString(),
                         mPhotoUrl,
@@ -239,7 +251,9 @@ public class ChatActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            NavUtils.navigateUpTo(this, new Intent(this, ReportsListActivity.class));
+            Intent intent = new Intent(this, ReportsListActivity.class);
+            intent.putExtra(REPORTS_STATUS, getIntent().getStringExtra(REPORTS_STATUS));
+            NavUtils.navigateUpTo(this, intent);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -278,7 +292,7 @@ public class ChatActivity extends AppCompatActivity implements
     protected void addMessageToFirestore(final Uri uri, final String mediaType) {
         ChatMessage tempMessage = new ChatMessage(
                 null,
-                mUsername,
+                mDisplayName,
                 Calendar.getInstance().getTime(),
                 mMessageEditText.getText().toString(),
                 mPhotoUrl,
