@@ -4,11 +4,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
@@ -28,10 +26,6 @@ import android.widget.ImageView;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -41,10 +35,10 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.MessageAdapter;
 import com.mobile.andrada.reportstuff.db.ChatMessage;
+import com.mobile.andrada.reportstuff.firestore.Message;
 
 import java.util.Calendar;
 
@@ -60,6 +54,8 @@ public class ChatActivity extends AppCompatActivity implements
     public final static String REPORT_ID = "report_id";
     public final static String TAG = "ChatActivity";
     public static final String MESSAGES_CHILD = "messages";
+    public static final String REPORTS_CHILD = "reports";
+    public static final String MEDIA_URL_FIELD = "mediaUrl";
     public final static String ANONYMOUS = "anonymous";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
     private static final int REQUEST_IMAGE = 1;
@@ -68,12 +64,12 @@ public class ChatActivity extends AppCompatActivity implements
     public static final String EXTRA_MEDIA_URI = "extra_media_uri";
 
     private String mDisplayName;
-    private String mEmail;
     private String mPhotoUrl;
     private SharedPreferences mSharedPreferences;
-    private LinearLayoutManager mLinearLayoutManager;
 
     private MediaPlayer mediaPlayer;
+
+    private String mReportId;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -117,17 +113,9 @@ public class ChatActivity extends AppCompatActivity implements
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
-        if (mFirebaseUser == null) {
-            // Not signed in, launch the Sign In activity
-            startActivity(new Intent(this, SignInActivity.class));
-            finish();
-            return;
-        } else {
-            mDisplayName = mFirebaseUser.getDisplayName();
-            mEmail = mFirebaseUser.getEmail();
-            if (mFirebaseUser.getPhotoUrl() != null) {
-                mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
-            }
+        mDisplayName = mFirebaseUser.getDisplayName();
+        if (mFirebaseUser.getPhotoUrl() != null) {
+            mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
         }
 
         // Only used for sign out
@@ -140,20 +128,10 @@ public class ChatActivity extends AppCompatActivity implements
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
 
-//        mFirestore.collection("reports")
-//                .whereArrayContains("activeUsers", mEmail)
-//                .whereEqualTo("status", "active")
-//                .limit(1).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//            @Override
-//            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                QuerySnapshot reports = task.getResult();
-//                String reportID = reports != null ? reports.getDocuments().get(0).getId() : null;
-//            }
-//        });
-
-        String reportId = getIntent().getStringExtra(REPORT_ID);
-        mQuery = mFirestore.collection("reports")
-                .document(reportId).collection("messages").orderBy("time");
+        // reportID is never empty!
+        mReportId = getIntent().getStringExtra(REPORT_ID);
+        mQuery = mFirestore.collection(REPORTS_CHILD)
+                .document(mReportId).collection(MESSAGES_CHILD).orderBy("time");
 
         mAdapter = new MessageAdapter(mQuery, this) {
 
@@ -169,13 +147,12 @@ public class ChatActivity extends AppCompatActivity implements
 
             @Override
             protected void onError(FirebaseFirestoreException e) {
-                // Show a snackbar on errors
                 Snackbar.make(findViewById(android.R.id.content),
                         "Error: check logs for info.", Snackbar.LENGTH_LONG).show();
             }
         };
 
-        mLinearLayoutManager = new LinearLayoutManager(this);
+        LinearLayoutManager mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mAdapter);
@@ -203,30 +180,28 @@ public class ChatActivity extends AppCompatActivity implements
             }
         });
 
-        mAddMessageImageView.setOnClickListener(new View.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("*/*");
-                startActivityForResult(intent, REQUEST_IMAGE);
-            }
+        mAddMessageImageView.setOnClickListener(view -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            startActivityForResult(intent, REQUEST_IMAGE);
         });
 
-        mSendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ChatMessage chatMessage = new ChatMessage(
-                        null,
-                        mDisplayName,
-                        Calendar.getInstance().getTime(),
-                        mMessageEditText.getText().toString(),
-                        mPhotoUrl,
-                        null,
-                        "text");
-                mFirestore.collection(MESSAGES_CHILD).add(chatMessage);
-                mMessageEditText.setText("");
-            }
+        mSendButton.setOnClickListener(view -> {
+            Message message = new Message(
+                    null,
+                    "text",
+                    null,
+                    mDisplayName,
+                    mPhotoUrl,
+                    mMessageEditText.getText().toString(),
+                    Calendar.getInstance().getTime()
+            );
+            mFirestore.collection(REPORTS_CHILD)
+                    .document(mReportId)
+                    .collection(MESSAGES_CHILD)
+                    .add(message);
+
+            mMessageEditText.setText("");
         });
     }
 
@@ -290,54 +265,51 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     protected void addMessageToFirestore(final Uri uri, final String mediaType) {
-        ChatMessage tempMessage = new ChatMessage(
+        Message tempMessage = new Message(
+                null,
+                mediaType,
                 null,
                 mDisplayName,
-                Calendar.getInstance().getTime(),
-                mMessageEditText.getText().toString(),
                 mPhotoUrl,
-                null,
-                mediaType);
-        mFirestore.collection(MESSAGES_CHILD).add(tempMessage).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentReference> task) {
-                if (task.isSuccessful()) {
-                    DocumentReference docRef = task.getResult();
-                    String key = docRef.getId();
-                    StorageReference storageReference =
-                            FirebaseStorage.getInstance()
-                                    .getReference(mFirebaseUser.getUid())
-                                    .child(key)
-                                    .child(uri.getLastPathSegment());
+                mMessageEditText.getText().toString(),
+                Calendar.getInstance().getTime()
+                );
+        mFirestore.collection(REPORTS_CHILD)
+                .document(mReportId)
+                .collection(MESSAGES_CHILD)
+                .add(tempMessage)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentReference docRef = task.getResult();
+                        String key = docRef.getId();
+                        StorageReference storageReference =
+                                FirebaseStorage.getInstance()
+                                        .getReference(mFirebaseUser.getUid())
+                                        .child(key)
+                                        .child(uri.getLastPathSegment());
 
-                    putMediaInStorage(storageReference, uri, key, mediaType);
-                } else {
-                    Log.w(TAG, "Unable to write message to database.", task.getException());
-                }
-            }
-        });
+                        putMediaInStorage(storageReference, uri, key, mediaType);
+                    } else {
+                        Log.w(TAG, "Unable to write message to database.", task.getException());
+                    }
+                });
     }
 
     private void putMediaInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
         storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
-                new OnCompleteListener<UploadTask.TaskSnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-                        storageReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                            @Override
-                            public void onSuccess(Uri uri) {
-                                mFirestore.collection(MESSAGES_CHILD).document(key).update("mediaUrl", uri.toString());
-                            }
-
-
-                        }).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.w(TAG, "Image upload task was not successful.", e);
-                            }
-                        });
-                    }
-                });
+                task -> storageReference.getDownloadUrl()
+                        .addOnSuccessListener(
+                                uri1 ->
+                                        mFirestore.collection(REPORTS_CHILD)
+                                                .document(mReportId)
+                                                .collection(MESSAGES_CHILD)
+                                                .document(key)
+                                                .update(MEDIA_URL_FIELD, uri1.toString())
+                        ).addOnFailureListener(
+                                e ->
+                                        Log.w(TAG, "Image upload task was not successful.", e)
+                        )
+        );
     }
 
     @Override
