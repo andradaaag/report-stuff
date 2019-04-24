@@ -91,22 +91,25 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
             "latestLocation": newMessage.location
         };
 
-        if (!checkUserIsOfficial(email)) {
-            // Update report with newMessage.location and timestamp
+        return checkUserIsOfficial(email).then((isOfficial) => {
+            if (isOfficial) {
+                console.log("Did not update location of report since user", email, "is an official");
+                return {
+                    result: `Did not update location of report since user ${email} is an official.`
+                }
+            }
+            // Otherwise, update report with newMessage.location and timestamp
             console.log("Updating report", reportId, "with latest location and timestamp", newReport);
             return admin.firestore().collection("reports").doc(reportId).update(newReport);
-        }
-        return {
-            result: `Did not update location of report since user ${email} is an official.`
-        }
+        });
     });
 
 async function checkUserIsOfficial(email) {
     const user = await admin.auth().getUserByEmail(email);
     return (user.customClaims && (
-            user.customClaims.policeman === true
-            || user.customClaims.firefighter === true
-            || user.customClaims.smurd === true
-        )
-    );
+        user.customClaims.policeman === true
+        || user.customClaims.firefighter === true
+        || user.customClaims.smurd === true
+    ));
+
 }
