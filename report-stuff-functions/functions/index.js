@@ -85,12 +85,28 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
     .onCreate((snap, context) => {
         const newMessage = snap.data();
         const reportId = context.params.reportId;
+        const email = newMessage.email;
         const newReport = {
-            "lastTime": newMessage.time,
-            "lastLocation": newMessage.location
+            "latestTime": newMessage.time,
+            "latestLocation": newMessage.location
         };
 
-        // Update report with newMessage.location and timestamp
-        console.log("Updating report", reportId, "with latest location and timestamp", newReport);
-        return admin.firestore().collection("reports").doc(reportId).update(newReport);
+        if (!checkUserIsOfficial(email)) {
+            // Update report with newMessage.location and timestamp
+            console.log("Updating report", reportId, "with latest location and timestamp", newReport);
+            return admin.firestore().collection("reports").doc(reportId).update(newReport);
+        }
+        return {
+            result: `Did not update location of report since user ${email} is an official.`
+        }
     });
+
+async function checkUserIsOfficial(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    return (user.customClaims && (
+            user.customClaims.policeman === true
+            || user.customClaims.firefighter === true
+            || user.customClaims.smurd === true
+        )
+    );
+}
