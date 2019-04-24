@@ -1,9 +1,11 @@
 package com.mobile.andrada.reportstuff.firestore;
 
+import com.google.firebase.firestore.GeoPoint;
+
 import java.util.Date;
 
 public class Message {
-    private String location;
+    private GeoPoint location;
     private String mediaType;
     private String mediaUrl;
     private String name;
@@ -14,7 +16,7 @@ public class Message {
     public Message() {
     }
 
-    public Message(String location, String mediaType, String mediaUrl, String name, String photoUrl, String text, Date time) {
+    public Message(GeoPoint location, String mediaType, String mediaUrl, String name, String photoUrl, String text, Date time) {
         this.location = location;
         this.mediaType = mediaType;
         this.mediaUrl = mediaUrl;
@@ -24,11 +26,11 @@ public class Message {
         this.time = time;
     }
 
-    public String getLocation() {
+    public GeoPoint getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(GeoPoint location) {
         this.location = location;
     }
 
