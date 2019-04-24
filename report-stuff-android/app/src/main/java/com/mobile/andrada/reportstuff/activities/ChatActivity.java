@@ -310,7 +310,7 @@ public class ChatActivity extends AppCompatActivity implements
                             .add(message)
                             .addOnCompleteListener(onCompleteListener);
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "Error on getLastLocation" + e));
+                .addOnFailureListener(e -> Log.e(TAG, "Error on getLatestLocation" + e));
     }
 
     protected void addMediaMessageToFirestore(final Uri uri, final String mediaType) {
