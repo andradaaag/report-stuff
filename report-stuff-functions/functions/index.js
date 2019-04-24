@@ -30,6 +30,7 @@ async function grantPolicemanRole(email) {
         policeman: true
     });
 }
+
 exports.makeFirefighter = functions.https.onCall((data, context) => {
     // Commented for development purposes
     // if (context.auth.token.firefighter !== true) {
@@ -54,6 +55,7 @@ async function grantFirefighterRole(email) {
         firefighter: true
     });
 }
+
 exports.makeSmurd = functions.https.onCall((data, context) => {
     // Commented for development purposes
     // if (context.auth.token.smurd !== true) {
@@ -78,3 +80,17 @@ async function grantSmurdRole(email) {
         smurd: true
     });
 }
+
+exports.updateReport = functions.firestore.document('reports/{reportId}/messages/{messageId}')
+    .onCreate((snap, context) => {
+        const newMessage = snap.data();
+        const reportId = context.params.reportId;
+        const newReport = {
+            "lastTime": newMessage.time,
+            "lastLocation": newMessage.location
+        };
+
+        // Update report with newMessage.location and timestamp
+        console.log("Updating report", reportId, "with latest location and timestamp", newReport);
+        return admin.firestore().collection("reports").doc(reportId).update(newReport);
+    });
