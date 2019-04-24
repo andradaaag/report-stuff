@@ -295,6 +295,7 @@ public class ChatActivity extends AppCompatActivity implements
                 .addOnSuccessListener(this, location -> {
                     // Got last known location. In some rare situations this can be null.
                     Message message = new Message(
+                            mFirebaseUser.getEmail(),
                             new GeoPoint(location.getLatitude(), location.getLongitude()),
                             mediaType,
                             null,

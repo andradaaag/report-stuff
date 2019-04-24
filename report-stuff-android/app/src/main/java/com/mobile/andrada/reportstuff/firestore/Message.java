@@ -5,6 +5,7 @@ import com.google.firebase.firestore.GeoPoint;
 import java.util.Date;
 
 public class Message {
+    private String email;
     private GeoPoint location;
     private String mediaType;
     private String mediaUrl;
@@ -16,7 +17,8 @@ public class Message {
     public Message() {
     }
 
-    public Message(GeoPoint location, String mediaType, String mediaUrl, String name, String photoUrl, String text, Date time) {
+    public Message(String email, GeoPoint location, String mediaType, String mediaUrl, String name, String photoUrl, String text, Date time) {
+        this.email = email;
         this.location = location;
         this.mediaType = mediaType;
         this.mediaUrl = mediaUrl;
@@ -24,6 +26,14 @@ public class Message {
         this.photoUrl = photoUrl;
         this.text = text;
         this.time = time;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public GeoPoint getLocation() {
@@ -85,7 +95,8 @@ public class Message {
     @Override
     public String toString() {
         return "Message{" +
-                "location='" + location + '\'' +
+                "email='" + email + '\'' +
+                ", location=" + location +
                 ", mediaType='" + mediaType + '\'' +
                 ", mediaUrl='" + mediaUrl + '\'' +
                 ", name='" + name + '\'' +
