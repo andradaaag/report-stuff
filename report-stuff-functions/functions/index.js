@@ -111,5 +111,44 @@ async function checkUserIsOfficial(email) {
         || user.customClaims.firefighter === true
         || user.customClaims.smurd === true
     ));
-
 }
+
+exports.sendNotification = functions.firestore.document('reports/{reportId}')
+    .onCreate((snap, context) => {
+            const newReport = snap.data();
+            const location = newReport.location;
+
+            //TODO: Determine roles to receive notification
+
+            //TODO: Search for nearby tokens to send notifications to
+            const officials = admin.firestore().collection("officials").get().then((snapshot) => {
+                    let activeOfficials = [];
+                    for (let official in officials) {
+                        //TODO: Compare locations
+                        activeOfficials.push(official)
+                    }
+
+                    // Construct notification
+                    const payload = {
+                        data: {
+                            username: request.username,
+                            imageUrl: request.imageUrl,
+                            email: request.email,
+                            uid: request.uid,
+                            text: request.text
+                        }
+                    };
+
+                    // Send notifications
+                    const emails = [];
+                    for (let official in activeOfficials) {
+                        admin.messaging().sendToDevice(official.fcmToken, payload);
+                        emails.push(official.email);
+                    }
+
+                    admin.firestore().collection("reports").document(reportId).update("activeUsers", emails);
+                    //TODO: Check not no override citizen email when doing this
+                }
+            );
+        }
+    );
