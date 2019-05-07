@@ -11,6 +11,13 @@ import java.util.List;
 import java.util.Locale;
 
 public class Utils {
+    public enum Role {
+        citizen,
+        policeman,
+        firefighter,
+        smurd
+    }
+
     public static String convertGeoPointToAdress(Context context, GeoPoint geoPoint) {
         if (geoPoint == null)
             return "";
