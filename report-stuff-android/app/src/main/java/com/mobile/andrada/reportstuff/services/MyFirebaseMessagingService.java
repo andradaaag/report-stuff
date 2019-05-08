@@ -32,7 +32,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(Map<String, String> payload) {
-        String text = payload.get("citizenName") + payload.get("location") + payload.get("time");
+        String text = payload.get("citizenName") + payload.get("location");
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
