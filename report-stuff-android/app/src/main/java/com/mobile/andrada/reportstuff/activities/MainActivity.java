@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -18,6 +19,8 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -25,6 +28,8 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.GeoPoint;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
@@ -140,8 +145,16 @@ public class MainActivity extends AppCompatActivity {
                             // Update existing official record
                             officials.document(snapshots.get(0).getId()).update("location", locationGP);
                         } else {
-                            // Create new official record
-                            officials.add(new OfficialRecord("", locationGP, mUid, mRole.toString()));
+                            // Retrieve fcmToken and create new official record
+                            FirebaseInstanceId.getInstance().getInstanceId()
+                                    .addOnCompleteListener(task2 -> {
+                                        if (!task2.isSuccessful()) {
+                                            Log.w(TAG, "getInstanceId failed", task2.getException());
+                                            return;
+                                        }
+                                        String token = task2.getResult().getToken();
+                                        officials.add(new OfficialRecord(token, locationGP, mUid, mRole.toString()));
+                                    });
                         }
                     }
                 });

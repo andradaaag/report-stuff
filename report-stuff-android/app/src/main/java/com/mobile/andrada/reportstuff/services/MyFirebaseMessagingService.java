@@ -9,7 +9,6 @@ import com.google.firebase.messaging.RemoteMessage;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFMService";
-    private static final String FRIENDLY_ENGAGE_TOPIC = "friendly_engage";
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -23,7 +22,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onNewToken(String s) {
         super.onNewToken(s);
         Log.d("NEW_TOKEN", s);
-        FirebaseMessaging.getInstance()
-                .subscribeToTopic(FRIENDLY_ENGAGE_TOPIC);
+        //TODO: call cloud function for updating token in officials collection
     }
 }
