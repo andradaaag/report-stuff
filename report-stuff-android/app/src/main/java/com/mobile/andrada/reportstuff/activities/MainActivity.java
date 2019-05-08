@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         } else {
             mUid = mFirebaseUser.getUid();
-            mFirebaseUser.getIdToken(true).addOnSuccessListener(result -> {
+            mFirebaseUser.getIdToken(false).addOnSuccessListener(result -> {
                 mRole = Role.citizen;
                 if (result.getClaims().containsKey("policeman"))
                     mRole = Role.policeman;
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
                     startSendingLocationToFirestore();
                     startLocationUpdates();
                 }
-            });
+            }).addOnFailureListener(exception-> Log.e(TAG, exception.getMessage()));
         }
     }
 
