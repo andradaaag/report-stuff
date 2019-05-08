@@ -1,13 +1,15 @@
 package com.mobile.andrada.reportstuff.firestore;
 
+import com.google.firebase.firestore.GeoPoint;
+
 import java.util.Date;
 import java.util.List;
 
 public class Report {
     private List<String> activeUsers;
     private String citizenName;
-    private String lastLocation;
-    private Date lastTime;
+    private GeoPoint latestLocation;
+    private Date latestTime;
     private List<String> openedBy;
     private String status;
     private String rid;
@@ -15,11 +17,11 @@ public class Report {
     public Report() {
     }
 
-    public Report(List<String> activeUsers, String citizenName, String lastLocation, Date lastTime, List<String> openedBy, String status) {
+    public Report(List<String> activeUsers, String citizenName, GeoPoint latestLocation, Date latestTime, List<String> openedBy, String status) {
         this.activeUsers = activeUsers;
         this.citizenName = citizenName;
-        this.lastLocation = lastLocation;
-        this.lastTime = lastTime;
+        this.latestLocation = latestLocation;
+        this.latestTime = latestTime;
         this.openedBy = openedBy;
         this.status = status;
     }
@@ -40,20 +42,20 @@ public class Report {
         this.citizenName = citizenName;
     }
 
-    public String getLastLocation() {
-        return lastLocation;
+    public GeoPoint getLatestLocation() {
+        return latestLocation;
     }
 
-    public void setLastLocation(String lastLocation) {
-        this.lastLocation = lastLocation;
+    public void setLatestLocation(GeoPoint latestLocation) {
+        this.latestLocation = latestLocation;
     }
 
-    public Date getLastTime() {
-        return lastTime;
+    public Date getLatestTime() {
+        return latestTime;
     }
 
-    public void setLastTime(Date lastTime) {
-        this.lastTime = lastTime;
+    public void setLatestTime(Date latestTime) {
+        this.latestTime = latestTime;
     }
 
     public List<String> getOpenedBy() {
@@ -77,8 +79,8 @@ public class Report {
         return "Report{" +
                 "activeUsers=" + activeUsers +
                 ", citizenName='" + citizenName + '\'' +
-                ", lastLocation='" + lastLocation + '\'' +
-                ", lastTime=" + lastTime +
+                ", latestLocation='" + latestLocation + '\'' +
+                ", latestTime=" + latestTime +
                 ", openedBy=" + openedBy +
                 ", status='" + status + '\'' +
                 '}';
