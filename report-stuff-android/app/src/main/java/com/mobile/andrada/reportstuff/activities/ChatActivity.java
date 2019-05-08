@@ -1,13 +1,16 @@
 package com.mobile.andrada.reportstuff.activities;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -22,16 +25,21 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -57,19 +65,20 @@ public class ChatActivity extends AppCompatActivity implements
     public static final String REPORTS_CHILD = "reports";
     public static final String MEDIA_URL_FIELD = "mediaUrl";
     public final static String ANONYMOUS = "anonymous";
+    public static final String CHAT_MSG_LENGTH = "chat_msg_length";
+    public static final String EXTRA_MEDIA_URI = "extra_media_uri";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
     private static final int REQUEST_IMAGE = 1;
     private static final int PLAY_MEDIA = 2;
-    public static final String CHAT_MSG_LENGTH = "chat_msg_length";
-    public static final String EXTRA_MEDIA_URI = "extra_media_uri";
+    private static final int MY_PERMISSIONS_REQUEST_ACCESS_LOCATION = 3;
 
     private String mDisplayName;
     private String mPhotoUrl;
-    private SharedPreferences mSharedPreferences;
-
-    private MediaPlayer mediaPlayer;
-
     private String mReportId;
+
+    private SharedPreferences mSharedPreferences;
+    private MediaPlayer mediaPlayer;
+    private FusedLocationProviderClient fusedLocationClient;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -107,6 +116,7 @@ public class ChatActivity extends AppCompatActivity implements
         }
 
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mDisplayName = ANONYMOUS;
 
         // Initialize Firebase Auth
@@ -187,21 +197,7 @@ public class ChatActivity extends AppCompatActivity implements
         });
 
         mSendButton.setOnClickListener(view -> {
-            Message message = new Message(
-                    null,
-                    "text",
-                    null,
-                    mDisplayName,
-                    mPhotoUrl,
-                    mMessageEditText.getText().toString(),
-                    Calendar.getInstance().getTime()
-            );
-            mFirestore.collection(REPORTS_CHILD)
-                    .document(mReportId)
-                    .collection(MESSAGES_CHILD)
-                    .add(message);
-
-            mMessageEditText.setText("");
+            addMessageToFirestore("text", task -> mMessageEditText.setText(""));
         });
     }
 
@@ -258,41 +254,81 @@ public class ChatActivity extends AppCompatActivity implements
                     } else if (uri.toString().contains("audio")) {
                         mediaType = "audio";
                     }
-                    addMessageToFirestore(uri, mediaType);
+                    addMediaMessageToFirestore(uri, mediaType);
                 }
             }
         }
     }
 
-    protected void addMessageToFirestore(final Uri uri, final String mediaType) {
-        Message tempMessage = new Message(
-                null,
-                mediaType,
-                null,
-                mDisplayName,
-                mPhotoUrl,
-                mMessageEditText.getText().toString(),
-                Calendar.getInstance().getTime()
-                );
-        mFirestore.collection(REPORTS_CHILD)
-                .document(mReportId)
-                .collection(MESSAGES_CHILD)
-                .add(tempMessage)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentReference docRef = task.getResult();
-                        String key = docRef.getId();
-                        StorageReference storageReference =
-                                FirebaseStorage.getInstance()
-                                        .getReference(mFirebaseUser.getUid())
-                                        .child(key)
-                                        .child(uri.getLastPathSegment());
+    public boolean checkForLocationPermission() {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_ACCESS_LOCATION);
+            return false;
+        }
+        return true;
+    }
 
-                        putMediaInStorage(storageReference, uri, key, mediaType);
-                    } else {
-                        Log.w(TAG, "Unable to write message to database.", task.getException());
-                    }
-                });
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_ACCESS_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length == 0
+                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this,
+                            "Permissions for location needed in order to automatically send it to rescuers.",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+    public void addMessageToFirestore(String mediaType, OnCompleteListener<DocumentReference> onCompleteListener) {
+        if (!checkForLocationPermission()) {
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    // Got last known location. In some rare situations this can be null.
+                    Message message = new Message(
+                            mFirebaseUser.getEmail(),
+                            new GeoPoint(location.getLatitude(), location.getLongitude()),
+                            mediaType,
+                            null,
+                            mDisplayName,
+                            mPhotoUrl,
+                            mMessageEditText.getText().toString(),
+                            Calendar.getInstance().getTime()
+                    );
+                    mFirestore.collection(REPORTS_CHILD)
+                            .document(mReportId)
+                            .collection(MESSAGES_CHILD)
+                            .add(message)
+                            .addOnCompleteListener(onCompleteListener);
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Error on getLatestLocation" + e));
+    }
+
+    protected void addMediaMessageToFirestore(final Uri uri, final String mediaType) {
+        addMessageToFirestore(mediaType, task -> {
+            if (task.isSuccessful()) {
+                DocumentReference docRef = task.getResult();
+                String key = docRef.getId();
+                StorageReference storageReference =
+                        FirebaseStorage.getInstance()
+                                .getReference(mFirebaseUser.getUid())
+                                .child(key)
+                                .child(uri.getLastPathSegment());
+
+                putMediaInStorage(storageReference, uri, key, mediaType);
+            } else {
+                Log.w(TAG, "Unable to write message to database.", task.getException());
+            }
+        });
     }
 
     private void putMediaInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
