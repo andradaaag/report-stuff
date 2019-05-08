@@ -29,7 +29,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(Map<String, String> payload) {
-        String text = payload.get("location"); //TODO: add more info on notification
+        String text = payload.get("citizenName") + payload.get("location") + payload.get("time");
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "channel_id")
                 .setContentTitle("New Report Nearby")
