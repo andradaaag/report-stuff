@@ -116,27 +116,25 @@ async function checkUserIsOfficial(email) {
 exports.sendNotification = functions.firestore.document('reports/{reportId}')
     .onCreate((snap, context) => {
             const newReport = snap.data();
-            const location = newReport.location;
 
             //TODO: Determine roles to receive notification
 
             //TODO: Search for nearby tokens to send notifications to
-            const officials = admin.firestore().collection("officials").get().then((snapshot) => {
+            return admin.firestore().collection("officials").get().then((officials) => {
+                    console.log("Found officials: ", officials);
                     let activeOfficials = [];
                     for (let official in officials) {
                         //TODO: Compare locations
                         activeOfficials.push(official)
                     }
+                    console.log("Active officials: ", officials);
 
                     // Construct notification
                     const payload = {
-                        data: {
-                            username: request.username,
-                            imageUrl: request.imageUrl,
-                            email: request.email,
-                            uid: request.uid,
-                            text: request.text
-                        }
+                        reportId: context.params.reportId,
+                        location: newReport.latestLocation,
+                        citizenName: newReport.citizenName,
+                        time: newReport.latestTime
                     };
 
                     // Send notifications
