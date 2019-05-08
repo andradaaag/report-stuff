@@ -120,32 +120,51 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
             //TODO: Determine roles to receive notification
 
             //TODO: Search for nearby tokens to send notifications to
-            return admin.firestore().collection("officials").get().then((officials) => {
-                    console.log("Found officials: ", officials);
+            return admin.firestore().collection("officials").get().then((snapshot) => {
+                    if (snapshot.empty) {
+                        console.log('No matching documents.');
+                        return;
+                    }
+
                     let activeOfficials = [];
-                    for (let official in officials) {
+                    snapshot.forEach(doc => {
+                        let official = doc.data();
+                        console.log(doc.id, '=>', official);
+
                         //TODO: Compare locations
-                        activeOfficials.push(official)
-                    }
-                    console.log("Active officials: ", officials);
+                        activeOfficials.push(official);
+                        console.log("Active officials: ", activeOfficials);
 
-                    // Construct notification
-                    const payload = {
-                        reportId: context.params.reportId,
-                        location: newReport.latestLocation,
-                        citizenName: newReport.citizenName,
-                        time: newReport.latestTime
-                    };
+                        // Construct notification
+                        const payload = {
+                            data: {
+                                reportId: context.params.reportId,
+                                location: "",
+                                // location: newReport.latestLocation,
+                                citizenName: newReport.citizenName,
+                                time: newReport.latestTime.toString()
+                            }
+                        };
 
-                    // Send notifications
-                    const emails = [];
-                    for (let official in activeOfficials) {
-                        admin.messaging().sendToDevice(official.fcmToken, payload);
-                        emails.push(official.email);
-                    }
+                        console.log("Payload: ", payload);
 
-                    admin.firestore().collection("reports").document(reportId).update("activeUsers", emails);
-                    //TODO: Check not no override citizen email when doing this
+                        // Send notifications
+                        const emails = ["gaeandrada@gmail.com"];
+                        emails.push(newReport.activeUsers.get(0));
+
+                        activeOfficials.forEach(official => {
+                            console.log("Official: ", official);
+                            console.log("FCM Token: ", official.fcmToken);
+                            admin.messaging().sendToDevice(official.fcmToken, payload).catch((exception) => {
+                                console.log("Error: ", exception)
+                            });
+                            // emails.push(official.email); TODO: add email to official object
+                        });
+
+                        console.log("Officials emails: ", emails);
+                        admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
+                        //TODO: Check not no override citizen email when doing this
+                    });
                 }
             );
         }
