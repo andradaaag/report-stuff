@@ -191,7 +191,11 @@ public class MainActivity extends AppCompatActivity {
                 .limit(1).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
-                reports.removeIf(report -> report.get("status").equals("closed"));
+                for(DocumentSnapshot report : reports){
+                    String status = (String) report.get("status");
+                    if(status.contains("closed"))
+                        reports.remove(report);
+                }
                 if (reports.size() > 0) {
                     // If citizen has report, open chat
                     mReportID = reports.get(0).getId();
