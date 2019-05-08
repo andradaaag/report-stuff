@@ -126,45 +126,56 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
                         return;
                     }
 
-                    let activeOfficials = [];
+                    let tokens = [];
+                    let emails = [newReport.activeUsers[0]];
+                    emails.push("gaeandrada@gmail.com");
+
+                    // Get tokens
                     snapshot.forEach(doc => {
                         let official = doc.data();
                         console.log(doc.id, '=>', official);
 
                         //TODO: Compare locations
-                        activeOfficials.push(official);
-                        console.log("Active officials: ", activeOfficials);
 
-                        // Construct notification
-                        const payload = {
-                            data: {
-                                reportId: context.params.reportId,
-                                location: "",
-                                // location: newReport.latestLocation,
-                                citizenName: newReport.citizenName,
-                                time: newReport.latestTime.toString()
-                            }
-                        };
+                        tokens.push(official.fcmToken);
+                        // emails.push(official.email); TODO: add email to official object
 
-                        console.log("Payload: ", payload);
+                    });
 
-                        // Send notifications
-                        const emails = ["gaeandrada@gmail.com"];
-                        emails.push(newReport.activeUsers.get(0));
+                    // Construct notification
+                    const payload = {
+                        data: {
+                            reportId: context.params.reportId,
+                            location: "",
+                            // location: newReport.latestLocation,
+                            citizenName: newReport.citizenName,
+                            time: newReport.latestTime.toString()
+                        }
+                    };
 
-                        activeOfficials.forEach(official => {
-                            console.log("Official: ", official);
-                            console.log("FCM Token: ", official.fcmToken);
-                            admin.messaging().sendToDevice(official.fcmToken, payload).catch((exception) => {
-                                console.log("Error: ", exception)
-                            });
-                            // emails.push(official.email); TODO: add email to official object
+                    console.log("Payload: ", payload);
+
+                    // Send notifications
+                    admin.messaging().sendToDevice(tokens, payload)
+                        .then((response) => {
+                            // if (response.failureCount > 0) {
+                            //     const failedTokens = [];
+                            //     response.responses.forEach((resp, idx) => {
+                            //         if (!resp.success) {
+                            //             failedTokens.push(registrationTokens[idx]);
+                            //         }
+                            //     });
+                            //     console.log('List of tokens that caused failures: ' + failedTokens);
+                            // }
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
                         });
 
-                        console.log("Officials emails: ", emails);
-                        admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
-                        //TODO: Check not no override citizen email when doing this
-                    });
+                    console.log("Officials emails: ", emails);
+                    admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
                 }
             );
         }
