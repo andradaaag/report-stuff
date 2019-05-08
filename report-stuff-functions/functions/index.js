@@ -148,8 +148,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
                             reportId: context.params.reportId,
                             location: "",
                             // location: newReport.latestLocation,
-                            citizenName: newReport.citizenName,
-                            time: newReport.latestTime.toString()
+                            citizenName: newReport.citizenName
                         }
                     };
 
