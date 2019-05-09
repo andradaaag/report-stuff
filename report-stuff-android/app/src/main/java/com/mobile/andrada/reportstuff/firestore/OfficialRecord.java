@@ -3,6 +3,7 @@ package com.mobile.andrada.reportstuff.firestore;
 import com.google.firebase.firestore.GeoPoint;
 
 public class OfficialRecord {
+    private String email;
     private String fcmToken;
     private GeoPoint location;
     private String officialId;
@@ -11,11 +12,20 @@ public class OfficialRecord {
     public OfficialRecord() {
     }
 
-    public OfficialRecord(String fcmToken, GeoPoint location, String officialId, String role) {
+    public OfficialRecord(String email, String fcmToken, GeoPoint location, String officialId, String role) {
+        this.email = email;
         this.fcmToken = fcmToken;
         this.location = location;
         this.officialId = officialId;
         this.role = role;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getFcmToken() {
@@ -53,7 +63,8 @@ public class OfficialRecord {
     @Override
     public String toString() {
         return "OfficialRecord{" +
-                "fcmToken='" + fcmToken + '\'' +
+                "email='" + email + '\'' +
+                ", fcmToken='" + fcmToken + '\'' +
                 ", location=" + location +
                 ", officialId='" + officialId + '\'' +
                 ", role='" + role + '\'' +

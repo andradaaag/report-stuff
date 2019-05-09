@@ -1,6 +1,5 @@
 package com.mobile.andrada.reportstuff.activities;
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -10,7 +9,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -39,7 +37,6 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -54,6 +51,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.MY_PERMISSIONS_REQUEST_ACCESS_LOCATION;
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
 
 public class ChatActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -70,7 +70,6 @@ public class ChatActivity extends AppCompatActivity implements
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
     private static final int REQUEST_IMAGE = 1;
     private static final int PLAY_MEDIA = 2;
-    private static final int MY_PERMISSIONS_REQUEST_ACCESS_LOCATION = 3;
 
     private String mDisplayName;
     private String mPhotoUrl;
@@ -260,17 +259,6 @@ public class ChatActivity extends AppCompatActivity implements
         }
     }
 
-    public boolean checkForLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_ACCESS_LOCATION);
-            return false;
-        }
-        return true;
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -288,7 +276,7 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     public void addMessageToFirestore(String mediaType, OnCompleteListener<DocumentReference> onCompleteListener) {
-        if (!checkForLocationPermission()) {
+        if (!checkForLocationPermission(this)) {
             return;
         }
         fusedLocationClient.getLastLocation()
@@ -296,7 +284,7 @@ public class ChatActivity extends AppCompatActivity implements
                     // Got last known location. In some rare situations this can be null.
                     Message message = new Message(
                             mFirebaseUser.getEmail(),
-                            new GeoPoint(location.getLatitude(), location.getLongitude()),
+                            convertLocation(location),
                             mediaType,
                             null,
                             mDisplayName,
