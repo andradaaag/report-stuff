@@ -158,6 +158,10 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
                         // Construct notification
                         const location = res[0].formattedAddress;
                         const payload = {
+                            notification: {
+                                title: "New Report from " + newReport.citizenName,
+                                body: location
+                            },
                             data: {
                                 reportId: context.params.reportId,
                                 location: location,
