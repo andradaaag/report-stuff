@@ -128,7 +128,6 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
 
                     let tokens = [];
                     let emails = [newReport.activeUsers[0]];
-                    emails.push("gaeandrada@gmail.com");
 
                     // Get tokens
                     snapshot.forEach(doc => {
@@ -138,7 +137,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
                         //TODO: Compare locations
 
                         tokens.push(official.fcmToken);
-                        // emails.push(official.email); TODO: add email to official object
+                        emails.push(official.email);
 
                     });
 
