@@ -71,11 +71,8 @@ public class ReportsListActivity extends AppCompatActivity implements
 
         mReportsStatus = getIntent().getStringExtra(REPORTS_STATUS);
         mQuery = mFirestore.collection("reports")
-                .whereEqualTo("status", mReportsStatus);
-
-        if(!mReportsStatus.equals("new")){
-            mQuery = mQuery.whereArrayContains("activeUsers", mFirebaseUser.getEmail());
-        }
+                .whereEqualTo("status", mReportsStatus)
+                .whereArrayContains("activeUsers", mFirebaseUser.getEmail());
 
         mAdapter = new ReportAdapter(mQuery, this) {
 
