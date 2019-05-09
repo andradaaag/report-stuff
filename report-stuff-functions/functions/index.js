@@ -113,89 +113,117 @@ async function checkUserIsOfficial(email) {
     ));
 }
 
-exports.sendNotification = functions.firestore.document('reports/{reportId}')
-    .onCreate((snap, context) => {
-            const newReport = snap.data();
+exports.sendNotification = functions.firestore.document('reports/{reportId}').onCreate((snap, context) => {
+        const newReport = snap.data();
 
-            //TODO: Determine roles to receive notification
+        //TODO: Determine roles to receive notification
 
-            //TODO: Search for nearby tokens to send notifications to
-            return admin.firestore().collection("officials").get().then((snapshot) => {
-                    if (snapshot.empty) {
-                        console.log('No matching documents.');
-                        return;
-                    }
-
-                    let tokens = [];
-                    let emails = [newReport.activeUsers[0]];
-
-                    // Get tokens
-                    snapshot.forEach(doc => {
-                        let official = doc.data();
-                        console.log(doc.id, '=>', official);
-
-                        //TODO: Compare locations
-
-                        tokens.push(official.fcmToken);
-                        emails.push(official.email);
-
-                    });
-
-                    const NodeGeocoder = require('node-geocoder');
-                    const options = {
-                        provider: 'google',
-                        apiKey: 'AIzaSyAedapjo4fcYde13Biu-6DFF47vBRwV2jw',
-                        formatter: 'string %S %n'
-                    };
-                    const geocoder = NodeGeocoder(options);
-
-                    console.log("Latitude: ", newReport.latestLocation._latitude);
-                    console.log("Longitude: ", newReport.latestLocation._longitude);
-                    geocoder.reverse({
-                        lat: newReport.latestLocation._latitude,
-                        lon: newReport.latestLocation._longitude
-                    }).then(function (res) {
-                        // Construct notification
-                        const location = res[0].formattedAddress;
-                        const payload = {
-                            notification: {
-                                title: "New Report from " + newReport.citizenName,
-                                body: location
-                            },
-                            data: {
-                                reportId: context.params.reportId,
-                                location: location,
-                                citizenName: newReport.citizenName
-                            }
-                        };
-                        console.log("Payload: ", payload);
-
-                        // Send notifications
-                        admin.messaging().sendToDevice(tokens, payload)
-                            .then((response) => {
-                                // if (response.failureCount > 0) {
-                                //     const failedTokens = [];
-                                //     response.responses.forEach((resp, idx) => {
-                                //         if (!resp.success) {
-                                //             failedTokens.push(registrationTokens[idx]);
-                                //         }
-                                //     });
-                                //     console.log('List of tokens that caused failures: ' + failedTokens);
-                                // }
-                                // Response is a message ID string.
-                                console.log('Successfully sent message:', response);
-                            })
-                            .catch((error) => {
-                                console.log('Error sending message:', error);
-                            });
-
-                        console.log("Officials emails: ", emails);
-                        admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
-
-                    }).catch(function (err) {
-                        console.log("Error: ", err);
-                    });
+        //TODO: Search for nearby tokens to send notifications to
+        return admin.firestore().collection("officials").get().then((snapshot) => {
+                if (snapshot.empty) {
+                    console.log('No matching documents.');
+                    return;
                 }
-            );
-        }
-    );
+
+                const citizenLatitude = newReport.latestLocation._latitude;
+                const citizenLongitude = newReport.latestLocation._longitude;
+
+                console.log("Latitude: ", citizenLatitude);
+                console.log("Longitude: ", citizenLongitude);
+
+                let tokens = [];
+                let emails = [newReport.activeUsers[0]];
+                let locationSearchData = [];
+
+                // Prepare data set for location search
+                snapshot.forEach(doc => {
+                    let official = doc.data();
+                    console.log(doc.id, '=>', official);
+
+                    //TODO: Only if policeman
+                    locationSearchData.push({
+                        _latitude: official.location._latitude,
+                        _longitude: official.location._longitude,
+                        email_token: official.email + " " + official.fcmToken
+                    });
+                });
+
+                const Geo = require('geo-nearby');
+                const geo = new Geo(locationSearchData, {
+                    setOptions: {
+                        id: 'email_token',
+                        // lat: ['location', '_latitude'],
+                        // lon: ['location', '_longitude']
+                        lat: '_latitude',
+                        lon: '_longitude'
+                    }
+                });
+
+                // 5km
+                const data = geo.nearBy(citizenLatitude, citizenLongitude, 5000);
+                console.log(data);
+
+                data.forEach(d => {
+                    let email_token = d['i'].split(" ");
+                    emails.push(email_token[0]);
+                    tokens.push(email_token[1]);
+                });
+
+                // Add official to activeUsers list of the report
+                console.log("Officials emails: ", emails);
+                admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
+
+
+                // Send notifications to officials
+                const NodeGeocoder = require('node-geocoder');
+                const options = {
+                    provider: 'google',
+                    apiKey: 'AIzaSyAedapjo4fcYde13Biu-6DFF47vBRwV2jw',
+                    formatter: 'string %S %n'
+                };
+
+                const geocoder = NodeGeocoder(options);
+                geocoder.reverse({
+                    lat: citizenLatitude,
+                    lon: citizenLongitude
+                }).then(function (res) {
+
+                    // Construct notification
+                    const location = res[0].formattedAddress;
+                    const payload = {
+                        notification: {
+                            title: "New Report from " + newReport.citizenName,
+                            body: location
+                        },
+                        data: {
+                            reportId: context.params.reportId,
+                            location: location,
+                            citizenName: newReport.citizenName
+                        }
+                    };
+                    console.log("Payload: ", payload);
+
+                    admin.messaging().sendToDevice(tokens, payload)
+                        .then((response) => {
+                            // if (response.failureCount > 0) {
+                            //     const failedTokens = [];
+                            //     response.responses.forEach((resp, idx) => {
+                            //         if (!resp.success) {
+                            //             failedTokens.push(registrationTokens[idx]);
+                            //         }
+                            //     });
+                            //     console.log('List of tokens that caused failures: ' + failedTokens);
+                            // }
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                }).catch(function (err) {
+                    console.log("Error: ", err);
+                });
+            }
+        );
+    }
+);
