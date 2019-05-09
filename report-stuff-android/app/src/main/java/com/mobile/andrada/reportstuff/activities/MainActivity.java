@@ -19,8 +19,6 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -29,7 +27,6 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
@@ -153,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                                             return;
                                         }
                                         String token = task2.getResult().getToken();
-                                        officials.add(new OfficialRecord(token, locationGP, mUid, mRole.toString()));
+                                        officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, locationGP, mUid, mRole.toString()));
                                     });
                         }
                     }
