@@ -141,39 +141,56 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}')
 
                     });
 
-                    // Construct notification
-                    const payload = {
-                        data: {
-                            reportId: context.params.reportId,
-                            location: "",
-                            // location: newReport.latestLocation,
-                            citizenName: newReport.citizenName
-                        }
+                    const NodeGeocoder = require('node-geocoder');
+                    const options = {
+                        provider: 'google',
+                        apiKey: 'AIzaSyAedapjo4fcYde13Biu-6DFF47vBRwV2jw',
+                        formatter: 'string %S %n'
                     };
+                    const geocoder = NodeGeocoder(options);
 
-                    console.log("Payload: ", payload);
+                    console.log("Latitude: ", newReport.latestLocation._latitude);
+                    console.log("Longitude: ", newReport.latestLocation._longitude);
+                    geocoder.reverse({
+                        lat: newReport.latestLocation._latitude,
+                        lon: newReport.latestLocation._longitude
+                    }).then(function (res) {
+                        // Construct notification
+                        const location = res[0].formattedAddress;
+                        const payload = {
+                            data: {
+                                reportId: context.params.reportId,
+                                location: location,
+                                citizenName: newReport.citizenName
+                            }
+                        };
+                        console.log("Payload: ", payload);
 
-                    // Send notifications
-                    admin.messaging().sendToDevice(tokens, payload)
-                        .then((response) => {
-                            // if (response.failureCount > 0) {
-                            //     const failedTokens = [];
-                            //     response.responses.forEach((resp, idx) => {
-                            //         if (!resp.success) {
-                            //             failedTokens.push(registrationTokens[idx]);
-                            //         }
-                            //     });
-                            //     console.log('List of tokens that caused failures: ' + failedTokens);
-                            // }
-                            // Response is a message ID string.
-                            console.log('Successfully sent message:', response);
-                        })
-                        .catch((error) => {
-                            console.log('Error sending message:', error);
-                        });
+                        // Send notifications
+                        admin.messaging().sendToDevice(tokens, payload)
+                            .then((response) => {
+                                // if (response.failureCount > 0) {
+                                //     const failedTokens = [];
+                                //     response.responses.forEach((resp, idx) => {
+                                //         if (!resp.success) {
+                                //             failedTokens.push(registrationTokens[idx]);
+                                //         }
+                                //     });
+                                //     console.log('List of tokens that caused failures: ' + failedTokens);
+                                // }
+                                // Response is a message ID string.
+                                console.log('Successfully sent message:', response);
+                            })
+                            .catch((error) => {
+                                console.log('Error sending message:', error);
+                            });
 
-                    console.log("Officials emails: ", emails);
-                    admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
+                        console.log("Officials emails: ", emails);
+                        admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
+
+                    }).catch(function (err) {
+                        console.log("Error: ", err);
+                    });
                 }
             );
         }
