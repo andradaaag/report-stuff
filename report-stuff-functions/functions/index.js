@@ -113,8 +113,141 @@ async function checkUserIsOfficial(email) {
     ));
 }
 
+exports.sendNotificationToOtherOfficials = functions.firestore.document('reports/{reportId}/messages/{messageId}')
+    .onCreate(async (snap, context) => {
+        const newMessage = snap.data();
+        const reportId = context.params.reportId;
+        const email = newMessage.email;
+
+        const isOfficial = await checkUserIsOfficial(email);
+        console.log(isOfficial);
+        if (isOfficial)
+            return;
+
+        //TODO: Give specific role based on words
+        const data = await getOfficialsNearby(newMessage.location, "policeman");
+        await addOfficialToActiveUsersListOfReport(data, email, reportId);
+        const address = await convertLocationToAddress(newMessage.location);
+        return sendNotification(address, data, reportId, newMessage.name);
+    });
+
+async function getOfficialsNearby(location, role) {
+    try {
+        const snapshot = await admin.firestore().collection("officials").get();
+        if (snapshot.empty) {
+            console.log('No matching documents.');
+            return;
+        }
+        const citizenLatitude = location._latitude;
+        const citizenLongitude = location._longitude;
+
+        console.log("Citizen latitude: ", citizenLatitude);
+        console.log("Citizen longitude: ", citizenLongitude);
+
+        let locationSearchData = [];
+
+        // Prepare data set for location search
+        snapshot.forEach(doc => {
+            let official = doc.data();
+            console.log("Official: ", doc.id, '=>', official);
+
+            if (official.role === role)
+                locationSearchData.push({
+                    _latitude: official.location._latitude,
+                    _longitude: official.location._longitude,
+                    email_token: official.email + " " + official.fcmToken
+                });
+        });
+
+        // Set up geo-nearby for searching in radius
+        const Geo = require('geo-nearby');
+        const geo = new Geo(locationSearchData, {
+            setOptions: {
+                id: 'email_token',
+                lat: '_latitude',
+                lon: '_longitude'
+            }
+        });
+
+        // Radius of 5km (or 5000m)
+        const data = geo.nearBy(citizenLatitude, citizenLongitude, 5000);
+        console.log("Officials nearby: ", data);
+        return data;
+    } catch (err) {
+        console.log("Error getting officials nearby with role: ", err);
+    }
+}
+
+async function addOfficialToActiveUsersListOfReport(data, citizenEmail, reportId) {
+    try {
+        let emails = [citizenEmail];
+
+        data.forEach(d => {
+            let email_token = d['i'].split(" ");
+            emails.push(email_token[0]);
+        });
+
+        // Add officials to activeUsers list of the report
+        console.log("Officials emails: ", emails);
+        return await admin.firestore().collection("reports").doc(reportId).update({"activeUsers": emails});
+    } catch (err) {
+        console.log("Error adding official to activeUsers list of report: ", err);
+    }
+}
+
+async function convertLocationToAddress(location) {
+    try {
+        const NodeGeocoder = require('node-geocoder');
+        const options = {
+            provider: 'google',
+            apiKey: 'AIzaSyAedapjo4fcYde13Biu-6DFF47vBRwV2jw',
+            formatter: 'string %S %n'
+        };
+
+        const geocoder = NodeGeocoder(options);
+        return await geocoder.reverse({
+            lat: location._latitude,
+            lon: location._longitude
+        });
+    } catch (err) {
+        console.log("Error converting location to address", err)
+    }
+}
+
+async function sendNotification(res, data, reportId, citizenName) {
+    let tokens = [];
+    data.forEach(d => {
+        let email_token = d['i'].split(" ");
+        tokens.push(email_token[1]);
+    });
+
+    const location = res[0].formattedAddress;
+    const payload = {
+        notification: {
+            title: "New Report from " + citizenName,
+            body: location
+        },
+        data: {
+            reportId: reportId,
+            location: location,
+            citizenName: citizenName
+        }
+    };
+    console.log("Payload: ", payload);
+
+    try {
+        const response = await admin.messaging().sendToDevice(tokens, payload);
+        console.log('Successfully sent message:', response);
+        return response;
+    } catch (err) {
+        console.log("Error sending message: ", err);
+        return err;
+    }
+}
+
 exports.sendInitialNotificationToPolicemen = functions.firestore.document('reports/{reportId}').onCreate((snap, context) => {
-        const newReport = snap.data();
+    //TODO: break it into function calls
+    const newReport = snap.data();
         return admin.firestore().collection("officials").get().then((snapshot) => {
                 if (snapshot.empty) {
                     console.log('No matching documents.');
