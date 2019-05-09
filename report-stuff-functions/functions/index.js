@@ -24,7 +24,7 @@ exports.makePoliceman = functions.https.onCall((data, context) => {
 async function grantPolicemanRole(email) {
     const user = await admin.auth().getUserByEmail(email);
     if (user.customClaims && user.customClaims.policeman === true) {
-        return;
+        return false;
     }
     return admin.auth().setCustomUserClaims(user.uid, {
         policeman: true
@@ -49,7 +49,7 @@ exports.makeFirefighter = functions.https.onCall((data, context) => {
 async function grantFirefighterRole(email) {
     const user = await admin.auth().getUserByEmail(email);
     if (user.customClaims && user.customClaims.firefighter === true) {
-        return;
+        return false;
     }
     return admin.auth().setCustomUserClaims(user.uid, {
         firefighter: true
@@ -74,7 +74,7 @@ exports.makeSmurd = functions.https.onCall((data, context) => {
 async function grantSmurdRole(email) {
     const user = await admin.auth().getUserByEmail(email);
     if (user.customClaims && user.customClaims.smurd === true) {
-        return;
+        return false;
     }
     return admin.auth().setCustomUserClaims(user.uid, {
         smurd: true
@@ -113,7 +113,7 @@ async function checkUserIsOfficial(email) {
     ));
 }
 
-exports.sendNotification = functions.firestore.document('reports/{reportId}').onCreate((snap, context) => {
+exports.sendInitialNotificationToPolicemen = functions.firestore.document('reports/{reportId}').onCreate((snap, context) => {
         const newReport = snap.data();
         return admin.firestore().collection("officials").get().then((snapshot) => {
                 if (snapshot.empty) {
@@ -177,7 +177,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}').on
                 };
 
                 const geocoder = NodeGeocoder(options);
-                geocoder.reverse({
+                return geocoder.reverse({
                     lat: citizenLatitude,
                     lon: citizenLongitude
                 }).then(function (res) {
@@ -198,7 +198,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}').on
                     console.log("Payload: ", payload);
 
                     // Send notifications to policemen
-                    admin.messaging().sendToDevice(tokens, payload)
+                    return admin.messaging().sendToDevice(tokens, payload)
                         .then((response) => {
                             // if (response.failureCount > 0) {
                             //     const failedTokens = [];
@@ -211,6 +211,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}').on
                             // }
                             // Response is a message ID string.
                             console.log('Successfully sent message:', response);
+                            return response;
                         })
                         .catch((error) => {
                             console.log('Error sending message:', error);
