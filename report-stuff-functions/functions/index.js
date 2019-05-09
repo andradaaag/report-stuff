@@ -115,21 +115,16 @@ async function checkUserIsOfficial(email) {
 
 exports.sendNotification = functions.firestore.document('reports/{reportId}').onCreate((snap, context) => {
         const newReport = snap.data();
-
-        //TODO: Determine roles to receive notification
-
-        //TODO: Search for nearby tokens to send notifications to
         return admin.firestore().collection("officials").get().then((snapshot) => {
                 if (snapshot.empty) {
                     console.log('No matching documents.');
                     return;
                 }
-
                 const citizenLatitude = newReport.latestLocation._latitude;
                 const citizenLongitude = newReport.latestLocation._longitude;
 
-                console.log("Latitude: ", citizenLatitude);
-                console.log("Longitude: ", citizenLongitude);
+                console.log("Citizen latitude: ", citizenLatitude);
+                console.log("Citizen longitude: ", citizenLongitude);
 
                 let tokens = [];
                 let emails = [newReport.activeUsers[0]];
@@ -140,41 +135,40 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}').on
                     let official = doc.data();
                     console.log(doc.id, '=>', official);
 
-                    //TODO: Only if policeman
-                    locationSearchData.push({
-                        _latitude: official.location._latitude,
-                        _longitude: official.location._longitude,
-                        email_token: official.email + " " + official.fcmToken
-                    });
+                    if (official.role === "policeman")
+                        locationSearchData.push({
+                            _latitude: official.location._latitude,
+                            _longitude: official.location._longitude,
+                            email_token: official.email + " " + official.fcmToken
+                        });
                 });
 
+                // Set up geo-nearby for searching in radius
                 const Geo = require('geo-nearby');
                 const geo = new Geo(locationSearchData, {
                     setOptions: {
                         id: 'email_token',
-                        // lat: ['location', '_latitude'],
-                        // lon: ['location', '_longitude']
                         lat: '_latitude',
                         lon: '_longitude'
                     }
                 });
 
-                // 5km
+                // Radius of 5km (or 5000m)
                 const data = geo.nearBy(citizenLatitude, citizenLongitude, 5000);
                 console.log(data);
 
+                // Get email and fcmToken from policemen nearby
                 data.forEach(d => {
                     let email_token = d['i'].split(" ");
                     emails.push(email_token[0]);
                     tokens.push(email_token[1]);
                 });
 
-                // Add official to activeUsers list of the report
-                console.log("Officials emails: ", emails);
+                // Add policeman to activeUsers list of the report
+                console.log("Policemen emails: ", emails);
                 admin.firestore().collection("reports").doc(context.params.reportId).update({"activeUsers": emails});
 
-
-                // Send notifications to officials
+                // Convert citizen location to human readable address
                 const NodeGeocoder = require('node-geocoder');
                 const options = {
                     provider: 'google',
@@ -203,6 +197,7 @@ exports.sendNotification = functions.firestore.document('reports/{reportId}').on
                     };
                     console.log("Payload: ", payload);
 
+                    // Send notifications to policemen
                     admin.messaging().sendToDevice(tokens, payload)
                         .then((response) => {
                             // if (response.failureCount > 0) {
