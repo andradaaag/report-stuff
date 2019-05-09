@@ -1,6 +1,5 @@
 package com.mobile.andrada.reportstuff.activities;
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -8,7 +7,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Button;
@@ -25,12 +23,11 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
-import com.mobile.andrada.reportstuff.utils.Utils.*;
+import com.mobile.andrada.reportstuff.utils.Utils.Role;
 
 import java.util.Calendar;
 import java.util.Collections;
@@ -41,6 +38,8 @@ import butterknife.ButterKnife;
 
 import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
 import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
 
 public class MainActivity extends AppCompatActivity {
     private static final int NEW_REPORTS = 1;
@@ -83,6 +82,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        // Initialize location provider
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
         // Initialize Firestore
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
@@ -90,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize FirebaseAuth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
+
+        // Handle flow based on user role
         if (mFirebaseUser == null) {
             startActivity(new Intent(this, SignInActivity.class));
             finish();
@@ -108,15 +112,14 @@ public class MainActivity extends AppCompatActivity {
                     showCitizenUI();
                 } else {
                     showOfficialUI();
-                    startSendingLocationToFirestore();
+                    startSendingOfficialLocationToFirestore();
                     startLocationUpdates();
                 }
             }).addOnFailureListener(exception-> Log.e(TAG, exception.getMessage()));
         }
     }
 
-    private void startSendingLocationToFirestore() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+    private void startSendingOfficialLocationToFirestore() {
         createLocationRequest();
         locationCallback = new LocationCallback() {
             @Override
@@ -125,22 +128,21 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 Location location = locationResult.getLastLocation();
-                sendLocationToFirestore(location);
+                sendOfficialLocationToFirestore(location);
             }
         };
     }
 
-    private void sendLocationToFirestore(Location location) {
+    private void sendOfficialLocationToFirestore(Location location) {
         CollectionReference officials = mFirestore.collection("officials");
         officials.whereEqualTo("officialId", mUid)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         List<DocumentSnapshot> snapshots = task.getResult().getDocuments();
-                        GeoPoint locationGP = new GeoPoint(location.getLatitude(), location.getLongitude());
                         if (snapshots.size() > 0) {
                             // Update existing official record
-                            officials.document(snapshots.get(0).getId()).update("location", locationGP);
+                            officials.document(snapshots.get(0).getId()).update("location", convertLocation(location));
                         } else {
                             // Retrieve fcmToken and create new official record
                             FirebaseInstanceId.getInstance().getInstanceId()
@@ -150,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
                                             return;
                                         }
                                         String token = task2.getResult().getToken();
-                                        officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, locationGP, mUid, mRole.toString()));
+                                        officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, convertLocation(location), mUid, mRole.toString()));
                                     });
                         }
                     }
@@ -199,21 +201,27 @@ public class MainActivity extends AppCompatActivity {
                     openChat();
                 } else {
                     // There is no report for this citizen, create a new one
-                    Report report = new Report(
-                            Collections.singletonList(mFirebaseUser.getEmail()),
-                            mFirebaseUser.getDisplayName(),
-                            null,
-                            Calendar.getInstance().getTime(),
-                            null,
-                            "new"
-                    );
-                    mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
-                        if (task1.isSuccessful()) {
-                            DocumentReference reportReference = task1.getResult();
-                            mReportID = reportReference.getId();
-                            openChat();
-                        }
-                    });
+                    if (!checkForLocationPermission(this)) {
+                        return;
+                    }
+                    fusedLocationClient.getLastLocation()
+                            .addOnSuccessListener(this, location -> {
+                                Report report = new Report(
+                                        Collections.singletonList(mFirebaseUser.getEmail()),
+                                        mFirebaseUser.getDisplayName(),
+                                        convertLocation(location),
+                                        Calendar.getInstance().getTime(),
+                                        null,
+                                        "new"
+                                );
+                                mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
+                                    if (task1.isSuccessful()) {
+                                        DocumentReference reportReference = task1.getResult();
+                                        mReportID = reportReference.getId();
+                                        openChat();
+                                    }
+                                });
+                            });
                 }
             }
         });
@@ -224,15 +232,6 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(REPORT_ID, mReportID);
         startActivityForResult(intent, ENTER_CHAT);
         finish();
-    }
-
-    public void checkForLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_ACCESS_LOCATION);
-        }
     }
 
     @Override
@@ -265,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startLocationUpdates() {
-        checkForLocationPermission();
+        checkForLocationPermission(this);
         fusedLocationClient.requestLocationUpdates(locationRequest,
                 locationCallback,
                 null /* Looper */);
