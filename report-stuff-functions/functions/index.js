@@ -148,7 +148,7 @@ async function determineRoles(mediaType, mediaUrl, text) {
     if (mediaType === "text") {
         //TODO: handle text to determine role
         if (text.includes("fire"))
-            roles.add("firefighter");
+            roles.push("firefighter");
     } else if (mediaType === "image") {
         //TODO: handle image to determine role
     } else if (mediaType === "video") {
