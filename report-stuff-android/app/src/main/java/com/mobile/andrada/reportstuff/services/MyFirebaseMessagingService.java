@@ -77,6 +77,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
+        if (mFirebaseUser == null)
+            return;
         CollectionReference officials = mFirestore.collection("officials");
         officials.whereEqualTo("officialId", mFirebaseUser.getUid())
                 .get()
@@ -89,5 +91,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         }
                     }
                 });
+
     }
 }
