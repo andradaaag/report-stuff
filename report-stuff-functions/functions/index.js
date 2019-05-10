@@ -135,6 +135,7 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const radius = 5000; // Radius of 5km (or 5000m)
         const reportId = context.params.reportId;
         const roles = await determineRoles(newMessage.mediaType, newMessage.mediaUrl, newMessage.text);
+        console.log("Roles to send notification to: ", roles);
 
         const promises = [];
         roles.forEach(role => {
@@ -147,8 +148,14 @@ async function determineRoles(mediaType, mediaUrl, text) {
     let roles = [];
     if (mediaType === "text") {
         //TODO: handle text to determine role
-        if (text.includes("fire"))
+        if (text.includes("fire")) {
             roles.push("firefighter");
+            console.log("Found keyword 'fire', calling firefighters");
+        }
+        if(text.includes("broke my arm") || text.includes("doctor")){
+            roles.push("smurd");
+            console.log("Found keywords related to medical assistance, calling smurd");
+        }
     } else if (mediaType === "image") {
         //TODO: handle image to determine role
     } else if (mediaType === "video") {
@@ -226,7 +233,7 @@ async function addOfficialToActiveUsersListOfReport(data, citizenEmail, reportId
     });
 
     // Add officials to activeUsers list of the report
-    console.log("Officials emails: ", emails);
+    console.log("Active users emails: ", emails);
     let result;
     try {
         result = await admin.firestore().collection("reports").doc(reportId).update({"activeUsers": emails});
