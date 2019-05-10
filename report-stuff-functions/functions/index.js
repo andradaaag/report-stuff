@@ -134,10 +134,30 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const citizenName = newMessage.name;
         const radius = 5000; // Radius of 5km (or 5000m)
         const reportId = context.params.reportId;
-        const role = "policeman";
+        const roles = await determineRoles(newMessage.mediaType, newMessage.mediaUrl, newMessage.text);
 
-        return sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role)
+        const promises = [];
+        roles.forEach(role => {
+            promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role))
+        });
+        return Promise.all(promises);
     });
+
+async function determineRoles(mediaType, mediaUrl, text) {
+    let roles = [];
+    if (mediaType === "text") {
+        //TODO: handle text to determine role
+        if (text.includes("fire"))
+            roles.add("firefighter");
+    } else if (mediaType === "image") {
+        //TODO: handle image to determine role
+    } else if (mediaType === "video") {
+        //TODO: handle video to determine role
+    } else if (mediaType === "audio") {
+        //TODO: handle audio to determine role
+    }
+    return roles;
+}
 
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
     const isOfficial = await checkUserIsOfficial(email);
