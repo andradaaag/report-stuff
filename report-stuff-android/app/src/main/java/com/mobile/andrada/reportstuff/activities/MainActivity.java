@@ -1,6 +1,7 @@
 package com.mobile.andrada.reportstuff.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
@@ -23,7 +24,6 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.iid.FirebaseInstanceId;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
@@ -127,12 +127,15 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 Location location = locationResult.getLastLocation();
-                sendOfficialLocationToFirestore(location);
+                sendOfficialLocationAndTokenToFirestore(location);
             }
         };
     }
 
-    private void sendOfficialLocationToFirestore(Location location) {
+    private void sendOfficialLocationAndTokenToFirestore(Location location) {
+        SharedPreferences preferences = getSharedPreferences("FCM_TOKEN", MODE_PRIVATE);
+        String token = preferences.getString("token", "");
+
         CollectionReference officials = mFirestore.collection("officials");
         officials.whereEqualTo("officialId", mUid)
                 .get()
@@ -140,19 +143,12 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         List<DocumentSnapshot> snapshots = task.getResult().getDocuments();
                         if (snapshots.size() > 0) {
-                            // Update existing official record
-                            officials.document(snapshots.get(0).getId()).update("location", convertLocation(location));
+                            officials.document(snapshots.get(0).getId()).update(
+                                    "location", convertLocation(location),
+                                    "fcmToken", token
+                            );
                         } else {
-                            // Retrieve fcmToken and create new official record
-                            FirebaseInstanceId.getInstance().getInstanceId()
-                                    .addOnCompleteListener(task2 -> {
-                                        if (!task2.isSuccessful()) {
-                                            Log.w(TAG, "getInstanceId failed", task2.getException());
-                                            return;
-                                        }
-                                        String token = task2.getResult().getToken();
-                                        officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, convertLocation(location), mUid, mRole.toString()));
-                                    });
+                            officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, convertLocation(location), mUid, mRole.toString()));
                         }
                     }
                 });
