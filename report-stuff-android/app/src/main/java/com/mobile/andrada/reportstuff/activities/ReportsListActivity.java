@@ -72,19 +72,19 @@ public class ReportsListActivity extends AppCompatActivity implements
         String email = mFirebaseUser.getEmail();
         switch (mReportsStatus) {
             case "new":
-                mQuery.whereEqualTo("status", "open")
+                mQuery = mQuery.whereEqualTo("status", "open")
                         .whereArrayContains("notifiedOfficials", email);
                 break;
             case "active":
-                mQuery.whereEqualTo("status", "open")
+                mQuery = mQuery.whereEqualTo("status", "open")
                         .whereArrayContains("activeOfficials", email);
                 break;
             case "closed":
-                mQuery.whereEqualTo("status", "closed")
+                mQuery = mQuery.whereEqualTo("status", "closed")
                         .whereArrayContains("activeOfficials", email);
                 break;
             default:
-                mQuery.whereArrayContains("activeOfficials", email);
+                mQuery = mQuery.whereArrayContains("activeOfficials", email);
                 break;
         }
 
