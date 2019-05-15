@@ -29,8 +29,8 @@ import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
 import com.mobile.andrada.reportstuff.utils.Utils.Role;
 
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                     startSendingOfficialLocationToFirestore();
                     startLocationUpdates();
                 }
-            }).addOnFailureListener(exception-> Log.e(TAG, exception.getMessage()));
+            }).addOnFailureListener(exception -> Log.e(TAG, exception.getMessage()));
         }
     }
 
@@ -190,41 +190,45 @@ public class MainActivity extends AppCompatActivity {
                 .limit(1).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
-                for(DocumentSnapshot report : reports){
+                for (DocumentSnapshot report : reports) {
                     String status = (String) report.get("status");
-                    if(status.contains("closed"))
+                    if (status.contains("closed"))
                         reports.remove(report);
                 }
                 if (reports.size() > 0) {
-                    // If citizen has report, open chat
                     mReportID = reports.get(0).getId();
                     openChat();
                 } else {
-                    // There is no report for this citizen, create a new one
-                    if (!checkForLocationPermission(this)) {
-                        return;
-                    }
-                    fusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(this, location -> {
-                                Report report = new Report(
-                                        Collections.singletonList(mFirebaseUser.getEmail()),
-                                        mFirebaseUser.getDisplayName(),
-                                        convertLocation(location),
-                                        Calendar.getInstance().getTime(),
-                                        null,
-                                        "new"
-                                );
-                                mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
-                                    if (task1.isSuccessful()) {
-                                        DocumentReference reportReference = task1.getResult();
-                                        mReportID = reportReference.getId();
-                                        openChat();
-                                    }
-                                });
-                            });
+                    createReportForCitizen();
                 }
+            } else {
+                Log.e(TAG, "Error: " + task.getException());
             }
         });
+    }
+
+    private void createReportForCitizen() {
+        if (!checkForLocationPermission(this)) {
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    Report report = new Report(
+                            mFirebaseUser.getDisplayName(),
+                            mFirebaseUser.getEmail(),
+                            convertLocation(location),
+                            Calendar.getInstance().getTime(),
+                            null,
+                            "new"
+                    );
+                    mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
+                        if (task1.isSuccessful()) {
+                            DocumentReference reportReference = task1.getResult();
+                            mReportID = reportReference.getId();
+                            openChat();
+                        }
+                    });
+                });
     }
 
     private void openChat() {
@@ -244,6 +248,9 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this,
                         "Permissions for location needed in order to automatically send it to rescuers.",
                         Toast.LENGTH_LONG).show();
+            }
+            if (mRole != null && mRole == Role.citizen) {
+                createReportForCitizen();
             }
         }
     }
