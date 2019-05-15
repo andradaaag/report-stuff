@@ -116,7 +116,7 @@ async function checkUserIsOfficial(email) {
 exports.sendInitialNotificationToPolicemen = functions.firestore.document('reports/{reportId}')
     .onCreate(async (snap, context) => {
         const newReport = snap.data();
-        const citizenEmail = newReport.activeUsers[0];
+        const citizenEmail = newReport.citizenEmail;
         const citizenLocation = newReport.latestLocation;
         const citizenName = newReport.citizenName;
         const radius = 5000; // Radius of 5km (or 5000m)
@@ -152,7 +152,7 @@ async function determineRoles(mediaType, mediaUrl, text) {
             roles.push("firefighter");
             console.log("Found keyword 'fire', calling firefighters");
         }
-        if(text.includes("broke my arm") || text.includes("doctor")){
+        if (text.includes("broke my arm") || text.includes("doctor")) {
             roles.push("smurd");
             console.log("Found keywords related to medical assistance, calling smurd");
         }
@@ -173,7 +173,7 @@ async function sendNotificationToRoleNearby(email, location, name, radius, repor
         return void callback();
 
     const data = await getOfficialsNearby(location, role, radius);
-    await addOfficialToActiveUsersListOfReport(data, email, reportId);
+    await addOfficialToNotifiedOfficialsListOfReport(data, reportId);
     const address = await convertLocationToAddress(location);
     return sendNotification(address, data, reportId, name);
 }
@@ -225,20 +225,23 @@ async function getOfficialsNearby(location, role, radius) {
     return data;
 }
 
-async function addOfficialToActiveUsersListOfReport(data, citizenEmail, reportId) {
-    let emails = [citizenEmail];
+async function addOfficialToNotifiedOfficialsListOfReport(data, reportId) {
+    let emails = [];
     data.forEach(d => {
         let email_token = d['i'].split(" ");
         emails.push(email_token[0]);
     });
 
-    // Add officials to activeUsers list of the report
-    console.log("Active users emails: ", emails);
+    // Add officials to notifiedOfficials list of the report
+    console.log("Notified officials: ", emails);
     let result;
     try {
-        result = await admin.firestore().collection("reports").doc(reportId).update({"activeUsers": emails});
+        result = await admin.firestore().collection("reports").doc(reportId)
+            .update({
+                notifiedOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, emails)
+            });
     } catch (err) {
-        console.log("Error adding official to activeUsers list of report: ", err);
+        console.log("Error adding official to notifiedOfficials list of report: ", err);
     }
     return result;
 }
