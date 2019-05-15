@@ -82,27 +82,36 @@ async function grantSmurdRole(email) {
 }
 
 exports.updateReport = functions.firestore.document('reports/{reportId}/messages/{messageId}')
-    .onCreate((snap, context) => {
+    .onCreate(async (snap, context) => {
         const newMessage = snap.data();
-        const reportId = context.params.reportId;
         const email = newMessage.email;
-        const newReport = {
-            "latestTime": newMessage.time,
-            "latestLocation": newMessage.location
-        };
-
-        return checkUserIsOfficial(email).then((isOfficial) => {
-            if (isOfficial) {
-                console.log("Did not update location of report since user", email, "is an official");
-                return {
-                    result: `Did not update location of report since user ${email} is an official.`
-                }
-            }
-            // Otherwise, update report with newMessage.location and timestamp
-            console.log("Updating report", reportId, "with latest location and timestamp", newReport);
-            return admin.firestore().collection("reports").doc(reportId).update(newReport);
-        });
+        const reportId = context.params.reportId;
+        const status = "active";
+        const isOfficial = await checkUserIsOfficial(email);
+        console.log(isOfficial);
+        if (isOfficial) {
+            return updateReportWithStatusAndActiveOfficials(reportId, email, status)
+        }
+        return updateReportWithLocationAndTimestamp(reportId, newMessage.time, newMessage.location)
     });
+
+async function updateReportWithStatusAndActiveOfficials(reportId, email, status) {
+    const newReport = {
+        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, email),
+        status: status
+    };
+    console.log("Updating report", reportId, "with status and activeOfficials", newReport);
+    return admin.firestore().collection("reports").doc(reportId).update(newReport);
+}
+
+async function updateReportWithLocationAndTimestamp(reportId, time, location) {
+    const newReport = {
+        latestTime: time,
+        latestLocation: location
+    };
+    console.log("Updating report", reportId, "with latest location and timestamp", newReport);
+    return admin.firestore().collection("reports").doc(reportId).update(newReport);
+}
 
 async function checkUserIsOfficial(email) {
     const user = await admin.auth().getUserByEmail(email);
