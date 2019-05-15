@@ -13,10 +13,4 @@
     android:title="List"
     app:showAsAction="ifRoom"/>
 
-<!-- Settings, should always be in the overflow -->
-<item android:id="@+id/action_more"
-    android:title="More"
-    android:icon="@drawable/ic_more_vert"
-    app:showAsAction="never"/>
-
 </menu>

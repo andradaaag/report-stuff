@@ -13,9 +13,19 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ViewSwitcher;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
@@ -26,8 +36,10 @@ import com.mobile.andrada.reportstuff.firestore.Report;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
+
 public class ReportsListActivity extends AppCompatActivity implements
-        ReportAdapter.OnItemClickListener {
+        ReportAdapter.OnItemClickListener, OnMapReadyCallback {
     private static final int ENTER_CHAT = 1;
     public static final String REPORTS_STATUS = "reports_status";
     public final static String TAG = "ReportsListActivity";
@@ -38,11 +50,16 @@ public class ReportsListActivity extends AppCompatActivity implements
     private Query mQuery;
     private String mReportsStatus;
 
+    private FusedLocationProviderClient fusedLocationClient;
+    private CollectionReference mReportsCollectionReference;
+
     private boolean mListViewVisibility = true;
     private boolean mMapViewVisibility = false;
 
     @BindView(R.id.reportRecyclerView)
     RecyclerView mReportsRecyclerView;
+
+    GoogleMap mGoogleMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,10 +92,13 @@ public class ReportsListActivity extends AppCompatActivity implements
         mQuery = mFirestore.collection("reports");
 
         String email = mFirebaseUser.getEmail();
+        //TODO: mReportsCollectionReference
         switch (mReportsStatus) {
             case "new":
                 mQuery = mQuery.whereEqualTo("status", "open")
                         .whereArrayContains("notifiedOfficials", email);
+
+//                mReportsCollectionReference = mFirestore.collection("reports").whereEqualTo();
                 break;
             case "active":
                 mQuery = mQuery.whereEqualTo("status", "open")
@@ -112,6 +132,14 @@ public class ReportsListActivity extends AppCompatActivity implements
                         "Error: check logs for info.", Snackbar.LENGTH_LONG).show();
             }
         };
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.reportsMapView);
+        mapFragment.getMapAsync(this);
+//        mMapView.onCreate(savedInstanceState);
+//        mMapView.getMapAsync(this);
 
         mReportsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mReportsRecyclerView.setHasFixedSize(true);
@@ -154,17 +182,54 @@ public class ReportsListActivity extends AppCompatActivity implements
 
             case R.id.map_view:
                 invalidateOptionsMenu();
+                switchViews();
                 return true;
 
             case R.id.list_view:
                 invalidateOptionsMenu();
-                return true;
-
-            case R.id.action_more:
+                switchViews();
                 return true;
 
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mGoogleMap = googleMap;
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
+        if (!checkForLocationPermission(this))
+            return;
+        mGoogleMap.setMyLocationEnabled(true);
+        float zoomLevel = 16.0f;
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> mGoogleMap.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(new LatLng(
+                                location.getLatitude(),
+                                location.getLongitude()
+                        ), zoomLevel))
+                );
+
+        //TODO: Add markers by creating request to firestore
+        mReportsCollectionReference.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                //TODO: Handle reports from firestore
+            } else {
+                //TODO: Handle error
+            }
+        });
+    }
+
+    private void switchViews() {
+        ViewSwitcher viewSwitcher = (ViewSwitcher) findViewById(R.id.viewSwitcher);
+        FrameLayout mapView = findViewById(R.id.reportsMapView);
+        RecyclerView listView = findViewById(R.id.reportRecyclerView);
+
+        if (viewSwitcher.getCurrentView() != listView) {
+            viewSwitcher.showPrevious();
+        } else if (viewSwitcher.getCurrentView() != mapView) {
+            viewSwitcher.showNext();
         }
     }
 
