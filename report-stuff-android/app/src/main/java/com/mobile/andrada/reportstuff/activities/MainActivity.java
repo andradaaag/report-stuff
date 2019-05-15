@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
     private void showCitizenUI() {
         // Check if citizen has active report
         mFirestore.collection("reports")
-                .whereArrayContains("activeUsers", mFirebaseUser.getEmail())
+                .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
                 .limit(1).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
@@ -214,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, location -> {
                     Report report = new Report(
+                            null,
                             mFirebaseUser.getDisplayName(),
                             mFirebaseUser.getEmail(),
                             convertLocation(location),
