@@ -9,6 +9,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -35,6 +37,9 @@ public class ReportsListActivity extends AppCompatActivity implements
     private ReportAdapter mAdapter;
     private Query mQuery;
     private String mReportsStatus;
+
+    private boolean mListViewVisibility = true;
+    private boolean mMapViewVisibility = false;
 
     @BindView(R.id.reportRecyclerView)
     RecyclerView mReportsRecyclerView;
@@ -114,6 +119,56 @@ public class ReportsListActivity extends AppCompatActivity implements
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.report_list_menu, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem listView = menu.findItem(R.id.list_view);
+        MenuItem mapView = menu.findItem(R.id.map_view);
+
+        if (mListViewVisibility) {
+            mListViewVisibility = false;
+            mMapViewVisibility = true;
+        } else {
+            mListViewVisibility = true;
+            mMapViewVisibility = false;
+        }
+
+        listView.setVisible(mListViewVisibility);
+        mapView.setVisible(mMapViewVisibility);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.home:
+                NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
+                return true;
+
+            case R.id.map_view:
+                invalidateOptionsMenu();
+                return true;
+
+            case R.id.list_view:
+                invalidateOptionsMenu();
+                return true;
+
+            case R.id.action_more:
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
     public void onPause() {
         mAdapter.stopListening();
         super.onPause();
@@ -128,16 +183,6 @@ public class ReportsListActivity extends AppCompatActivity implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == android.R.id.home) {
-            NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override

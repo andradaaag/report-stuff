@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<item
+    android:id="@+id/list_view"
+    android:icon="@drawable/ic_list"
+    android:title="ListView"
+    app:showAsAction="ifRoom"/>
+<item
+    android:id="@+id/map_view"
+    android:icon="@drawable/ic_action_map"
+    android:title="List"
+    app:showAsAction="ifRoom"/>
+
+<!-- Settings, should always be in the overflow -->
+<item android:id="@+id/action_more"
+    android:title="More"
+    android:icon="@drawable/ic_more_vert"
+    app:showAsAction="never"/>
+
+</menu>
