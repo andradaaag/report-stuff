@@ -1,7 +1,6 @@
 package com.mobile.andrada.reportstuff.activities;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
@@ -21,8 +20,6 @@ import com.google.firebase.firestore.Query;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.ReportAdapter;
 import com.mobile.andrada.reportstuff.firestore.Report;
-
-import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -70,9 +67,26 @@ public class ReportsListActivity extends AppCompatActivity implements
         mFirestore = FirebaseFirestore.getInstance();
 
         mReportsStatus = getIntent().getStringExtra(REPORTS_STATUS);
-        mQuery = mFirestore.collection("reports")
-                .whereEqualTo("status", mReportsStatus)
-                .whereArrayContains("activeUsers", mFirebaseUser.getEmail());
+        mQuery = mFirestore.collection("reports");
+
+        String email = mFirebaseUser.getEmail();
+        switch (mReportsStatus) {
+            case "new":
+                mQuery.whereEqualTo("status", "open")
+                        .whereArrayContains("notifiedOfficials", email);
+                break;
+            case "active":
+                mQuery.whereEqualTo("status", "open")
+                        .whereArrayContains("activeOfficials", email);
+                break;
+            case "closed":
+                mQuery.whereEqualTo("status", "closed")
+                        .whereArrayContains("activeOfficials", email);
+                break;
+            default:
+                mQuery.whereArrayContains("activeOfficials", email);
+                break;
+        }
 
         mAdapter = new ReportAdapter(mQuery, this) {
 

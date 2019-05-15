@@ -29,7 +29,6 @@ import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
 import com.mobile.andrada.reportstuff.utils.Utils.Role;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -220,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
                             convertLocation(location),
                             Calendar.getInstance().getTime(),
                             null,
-                            "new"
+                            "open"
                     );
                     mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
                         if (task1.isSuccessful()) {
