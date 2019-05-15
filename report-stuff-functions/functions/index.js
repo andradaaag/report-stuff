@@ -86,19 +86,17 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
         const newMessage = snap.data();
         const email = newMessage.email;
         const reportId = context.params.reportId;
-        const status = "active";
         const isOfficial = await checkUserIsOfficial(email);
         console.log(isOfficial);
         if (isOfficial) {
-            return updateReportWithStatusAndActiveOfficials(reportId, email, status)
+            return updateReportWithActiveOfficials(reportId, email)
         }
         return updateReportWithLocationAndTimestamp(reportId, newMessage.time, newMessage.location)
     });
 
-async function updateReportWithStatusAndActiveOfficials(reportId, email, status) {
+async function updateReportWithActiveOfficials(reportId, email) {
     const newReport = {
-        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, email),
-        status: status
+        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, email)
     };
     console.log("Updating report", reportId, "with status and activeOfficials", newReport);
     return admin.firestore().collection("reports").doc(reportId).update(newReport);
@@ -300,7 +298,7 @@ async function sendNotification(res, data, reportId, citizenName) {
     let response;
     try {
         response = await admin.messaging().sendToDevice(tokens, payload);
-        console.log('Successfully sent message:', response);
+        console.log('Send notification response: ', JSON.stringify(response));
     } catch (err) {
         console.log("Error sending message: ", err);
         return err;
