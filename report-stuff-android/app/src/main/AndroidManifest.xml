@@ -36,6 +36,7 @@
         </service>
 
         <activity android:name=".activities.VideoPlayer" />
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyCvwNpb1N-YX8kURtjRYGFv_U-Mk6ZMEIY"/>
     </application>
 
 </manifest>
