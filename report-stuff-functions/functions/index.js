@@ -96,9 +96,10 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
 
 async function updateReportWithActiveOfficials(reportId, email) {
     const newReport = {
-        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, email)
+        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, [email]),
+        notifiedOfficials: admin.firestore.FieldValue.arrayRemove.apply(null, [email])
     };
-    console.log("Updating report", reportId, "with status and activeOfficials", newReport);
+    console.log("Updating report", reportId, "with status, activeOfficials and notifiedOfficials", newReport);
     return admin.firestore().collection("reports").doc(reportId).update(newReport);
 }
 
