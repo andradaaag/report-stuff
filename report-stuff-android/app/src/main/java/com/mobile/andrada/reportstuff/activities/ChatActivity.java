@@ -25,7 +25,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -42,7 +41,6 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.MessageAdapter;
-import com.mobile.andrada.reportstuff.db.ChatMessage;
 import com.mobile.andrada.reportstuff.firestore.Message;
 
 import java.util.Calendar;
@@ -59,47 +57,44 @@ public class ChatActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         MessageAdapter.OnMessagePlayClickedListener {
 
-    public final static String REPORT_ID = "report_id";
-    public final static String TAG = "ChatActivity";
-    public static final String MESSAGES_CHILD = "messages";
-    public static final String REPORTS_CHILD = "reports";
-    public static final String MEDIA_URL_FIELD = "mediaUrl";
     public final static String ANONYMOUS = "anonymous";
     public static final String CHAT_MSG_LENGTH = "chat_msg_length";
     public static final String EXTRA_MEDIA_URI = "extra_media_uri";
+    public static final String MEDIA_URL_FIELD = "mediaUrl";
+    public static final String MESSAGES_CHILD = "messages";
+    public final static String REPORT_ID = "report_id";
+    public static final String REPORTS_CHILD = "reports";
+    public final static String TAG = "ChatActivity";
+
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
-    private static final int REQUEST_IMAGE = 1;
     private static final int PLAY_MEDIA = 2;
+    private static final int REQUEST_IMAGE = 1;
 
     private String mDisplayName;
     private String mPhotoUrl;
     private String mReportId;
 
-    private SharedPreferences mSharedPreferences;
-    private MediaPlayer mediaPlayer;
     private FusedLocationProviderClient fusedLocationClient;
+    private MediaPlayer mMediaPlayer;
+    private SharedPreferences mSharedPreferences;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
-    private GoogleApiClient mGoogleApiClient;
     private FirebaseFirestore mFirestore;
-    private MessageAdapter mAdapter;
+    private MessageAdapter mMessageAdapter;
     private Query mQuery;
 
-//    @BindView(R.id.progressBar)
-//    ProgressBar mProgressBar;
-
-    @BindView(R.id.sendButton)
-    Button mSendButton;
-
-    @BindView(R.id.messageRecyclerView)
-    RecyclerView mMessageRecyclerView;
+    @BindView(R.id.addMessageImageView)
+    ImageView mAddMessageImageView;
 
     @BindView(R.id.messageEditText)
     EditText mMessageEditText;
 
-    @BindView(R.id.addMessageImageView)
-    ImageView mAddMessageImageView;
+    @BindView(R.id.messageRecyclerView)
+    RecyclerView mMessageRecyclerView;
+
+    @BindView(R.id.sendButton)
+    Button mSendButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,16 +117,16 @@ public class ChatActivity extends AppCompatActivity implements
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
+        if (mFirebaseUser == null) {
+            startActivity(new Intent(this, SignInActivity.class));
+            finish();
+            return;
+        }
+
         mDisplayName = mFirebaseUser.getDisplayName();
         if (mFirebaseUser.getPhotoUrl() != null) {
             mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
         }
-
-        // Only used for sign out
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
-                .addApi(Auth.GOOGLE_SIGN_IN_API)
-                .build();
 
         // Get chat from firestore
         FirebaseFirestore.setLoggingEnabled(true);
@@ -142,7 +137,7 @@ public class ChatActivity extends AppCompatActivity implements
         mQuery = mFirestore.collection(REPORTS_CHILD)
                 .document(mReportId).collection(MESSAGES_CHILD).orderBy("time");
 
-        mAdapter = new MessageAdapter(mQuery, this) {
+        mMessageAdapter = new MessageAdapter(mQuery, this) {
 
             @Override
             protected void onDataChanged() {
@@ -164,9 +159,7 @@ public class ChatActivity extends AppCompatActivity implements
         LinearLayoutManager mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
-        mMessageRecyclerView.setAdapter(mAdapter);
-
-        //TODO: Maybe add some remote configs
+        mMessageRecyclerView.setAdapter(mMessageAdapter);
 
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(CHAT_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
@@ -202,14 +195,14 @@ public class ChatActivity extends AppCompatActivity implements
 
     @Override
     public void onPause() {
-        mAdapter.stopListening();
+        mMessageAdapter.stopListening();
         super.onPause();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mAdapter.startListening();
+        mMessageAdapter.startListening();
     }
 
     @Override
@@ -262,15 +255,13 @@ public class ChatActivity extends AppCompatActivity implements
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_ACCESS_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length == 0
-                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this,
-                            "Permissions for location needed in order to automatically send it to rescuers.",
-                            Toast.LENGTH_LONG).show();
-                }
+        // If request is cancelled, the result arrays are empty.
+        if (requestCode == MY_PERMISSIONS_REQUEST_ACCESS_LOCATION) {
+            if (grantResults.length == 0
+                    || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this,
+                        "Permissions for location needed in order to automatically send it to rescuers.",
+                        Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -339,7 +330,7 @@ public class ChatActivity extends AppCompatActivity implements
     @Override
     public void onOpenVideoClicked(DocumentSnapshot message) {
         Intent intent = new Intent(this, VideoPlayer.class);
-        ChatMessage chatMessage = message.toObject(ChatMessage.class);
+        Message chatMessage = message.toObject(Message.class);
         String uriString = chatMessage.getMediaUrl();
         if (uriString == null)
             return;
@@ -350,17 +341,17 @@ public class ChatActivity extends AppCompatActivity implements
 
     @Override
     public void onPlayAudioClicked(DocumentSnapshot message) {
-        if (mediaPlayer != null) {
-            mediaPlayer.start();
+        if (mMediaPlayer != null) {
+            mMediaPlayer.start();
             return;
         }
-        mediaPlayer = new MediaPlayer();
-        ChatMessage chatMessage = message.toObject(ChatMessage.class);
+        mMediaPlayer = new MediaPlayer();
+        Message chatMessage = message.toObject(Message.class);
 
         try {
-            mediaPlayer.setDataSource(chatMessage != null ? chatMessage.getMediaUrl() : null);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
+            mMediaPlayer.setDataSource(chatMessage != null ? chatMessage.getMediaUrl() : null);
+            mMediaPlayer.prepare();
+            mMediaPlayer.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -368,16 +359,16 @@ public class ChatActivity extends AppCompatActivity implements
 
     @Override
     public void onPauseAudioClicked(DocumentSnapshot message) {
-        if (mediaPlayer != null) {
-            mediaPlayer.pause();
+        if (mMediaPlayer != null) {
+            mMediaPlayer.pause();
         }
     }
 
     @Override
     public void onStopAudioClicked(DocumentSnapshot message) {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer = null;
+        if (mMediaPlayer != null) {
+            mMediaPlayer.stop();
+            mMediaPlayer = null;
         }
     }
 }

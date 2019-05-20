@@ -82,7 +82,6 @@ public class ReportsListActivity extends AppCompatActivity implements
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
         if (mFirebaseUser == null) {
-            // Not signed in, launch the Sign In activity
             startActivity(new Intent(this, SignInActivity.class));
             finish();
             return;
@@ -95,7 +94,6 @@ public class ReportsListActivity extends AppCompatActivity implements
         mQuery = mFirestore.collection("reports");
 
         String email = mFirebaseUser.getEmail();
-        //TODO: mReportsCollectionReference
         switch (mReportsStatus) {
             case "new":
                 mQuery = mQuery.whereEqualTo("status", "open")
@@ -139,8 +137,6 @@ public class ReportsListActivity extends AppCompatActivity implements
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.reportsMapView);
         mapFragment.getMapAsync(this);
-//        mMapView.onCreate(savedInstanceState);
-//        mMapView.getMapAsync(this);
 
         mReportsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mReportsRecyclerView.setHasFixedSize(true);
@@ -176,7 +172,6 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Integer itemId = item.getItemId();
         switch (item.getItemId()) {
             case android.R.id.home:
                 NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
