@@ -7,6 +7,7 @@
     tools:context=".activities.MainActivity">
 
     <LinearLayout
+        android:id="@+id/linearLayout2"
         android:layout_width="203dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -26,22 +27,39 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:baselineAligned="false"
-            android:visibility="gone"
-            android:text="New Reports" />
+            android:text="New Reports"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/activeReportsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:text="Active Reports" />
+            android:text="Active Reports"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/closedReportsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:text="Closed Reports" />
+            android:text="Closed Reports"
+            android:visibility="gone" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/askForHelpButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="Ask For Help"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

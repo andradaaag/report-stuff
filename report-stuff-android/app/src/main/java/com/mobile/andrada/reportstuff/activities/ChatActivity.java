@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -48,7 +47,6 @@ import java.util.Calendar;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.MY_PERMISSIONS_REQUEST_ACCESS_LOCATION;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
@@ -214,10 +212,7 @@ public class ChatActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            Intent intent = new Intent(this, ReportsListActivity.class);
-            intent.putExtra(REPORTS_STATUS, getIntent().getStringExtra(REPORTS_STATUS));
-            NavUtils.navigateUpTo(this, intent);
-            return true;
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }

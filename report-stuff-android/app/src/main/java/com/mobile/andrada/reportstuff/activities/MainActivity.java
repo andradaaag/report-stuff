@@ -71,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.activeReportsButton)
     Button activeReportsButton;
 
+    @BindView(R.id.askForHelpButton)
+    Button askForHelpButton;
+
     @BindView(R.id.closedReportsButton)
     Button closedReportsButton;
 
@@ -177,8 +180,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void showCitizenUI() {
+        askForHelpButton.setVisibility(Button.VISIBLE);
+        askForHelpButton.setOnClickListener(v -> askForHelpOnClick());
+    }
+
+    private void askForHelpOnClick() {
         // Check if citizen has active report
         mFirestore.collection("reports")
                 .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
@@ -231,7 +238,6 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra(REPORT_ID, mReportID);
         startActivityForResult(intent, ENTER_CHAT);
-        finish();
     }
 
     @Override
@@ -277,5 +283,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 //        startLocationUpdates();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ENTER_CHAT) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "Returned from chat");
+            }
+        }
     }
 }
