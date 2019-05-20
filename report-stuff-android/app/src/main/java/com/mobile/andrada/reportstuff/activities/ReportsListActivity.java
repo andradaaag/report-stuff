@@ -43,7 +43,7 @@ import butterknife.ButterKnife;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 
 public class ReportsListActivity extends AppCompatActivity implements
-        ReportAdapter.OnItemClickListener, OnMapReadyCallback {
+        ReportAdapter.OnItemClickListener, OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
     private static final int ENTER_CHAT = 1;
     public static final String REPORTS_STATUS = "reports_status";
     public final static String TAG = "ReportsListActivity";
@@ -204,6 +204,8 @@ public class ReportsListActivity extends AppCompatActivity implements
         if (!checkForLocationPermission(this))
             return;
         mGoogleMap.setMyLocationEnabled(true);
+        mGoogleMap.setOnInfoWindowClickListener(this);
+
         // Zoom level between 2.0 and 21.0
         float zoomLevel = 14.7f;
 
@@ -238,6 +240,14 @@ public class ReportsListActivity extends AppCompatActivity implements
                 Log.e(TAG, "Error when querying firestore: " + task.getException());
             }
         });
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Log.i(TAG, "Info window clicked");
+        String reportId = (String) marker.getTag();
+
+        openChatForReport(reportId);
     }
 
     private void switchViews() {
@@ -281,8 +291,12 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     @Override
     public void onItemClick(Report report) {
+        openChatForReport(report.getRid());
+    }
+
+    public void openChatForReport(String reportID) {
         Intent intent = new Intent(ReportsListActivity.this, ChatActivity.class);
-        intent.putExtra(ChatActivity.REPORT_ID, report.getRid());
+        intent.putExtra(ChatActivity.REPORT_ID, reportID);
         intent.putExtra(REPORTS_STATUS, mReportsStatus);
         startActivityForResult(intent, ENTER_CHAT);
     }
