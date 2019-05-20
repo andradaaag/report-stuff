@@ -176,8 +176,9 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Integer itemId = item.getItemId();
         switch (item.getItemId()) {
-            case R.id.home:
+            case android.R.id.home:
                 NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
                 return true;
 
