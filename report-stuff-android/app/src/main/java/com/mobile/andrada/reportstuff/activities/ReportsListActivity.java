@@ -1,7 +1,9 @@
 package com.mobile.andrada.reportstuff.activities;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
@@ -23,12 +25,14 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.ReportAdapter;
 import com.mobile.andrada.reportstuff.firestore.Report;
@@ -51,7 +55,6 @@ public class ReportsListActivity extends AppCompatActivity implements
     private String mReportsStatus;
 
     private FusedLocationProviderClient fusedLocationClient;
-    private CollectionReference mReportsCollectionReference;
 
     private boolean mListViewVisibility = true;
     private boolean mMapViewVisibility = false;
@@ -97,8 +100,6 @@ public class ReportsListActivity extends AppCompatActivity implements
             case "new":
                 mQuery = mQuery.whereEqualTo("status", "open")
                         .whereArrayContains("notifiedOfficials", email);
-
-//                mReportsCollectionReference = mFirestore.collection("reports").whereEqualTo();
                 break;
             case "active":
                 mQuery = mQuery.whereEqualTo("status", "open")
@@ -195,6 +196,7 @@ public class ReportsListActivity extends AppCompatActivity implements
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
@@ -202,7 +204,10 @@ public class ReportsListActivity extends AppCompatActivity implements
         if (!checkForLocationPermission(this))
             return;
         mGoogleMap.setMyLocationEnabled(true);
-        float zoomLevel = 16.0f;
+        // Zoom level between 2.0 and 21.0
+        float zoomLevel = 14.7f;
+
+        // Zoom into user's current location
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, location -> mGoogleMap.moveCamera(
                         CameraUpdateFactory.newLatLngZoom(new LatLng(
@@ -211,12 +216,26 @@ public class ReportsListActivity extends AppCompatActivity implements
                         ), zoomLevel))
                 );
 
-        //TODO: Add markers by creating request to firestore
-        mReportsCollectionReference.get().addOnCompleteListener(task -> {
+        // Add reports as markers on map
+        mQuery.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                //TODO: Handle reports from firestore
+                QuerySnapshot querySnapshot = task.getResult();
+                if (querySnapshot != null && querySnapshot.isEmpty())
+                    Log.i(TAG, "No reports found for this map view.");
+
+                querySnapshot.forEach(doc -> {
+                    Report report = doc.toObject(Report.class);
+                    Marker marker = mGoogleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(
+                                    report.getLatestLocation().getLatitude(),
+                                    report.getLatestLocation().getLongitude()
+                            )).title(report.getCitizenName())
+                            .snippet(report.getLatestTime().toString()));
+                    marker.setTag(doc.getId());
+                    marker.showInfoWindow();
+                });
             } else {
-                //TODO: Handle error
+                Log.e(TAG, "Error when querying firestore: " + task.getException());
             }
         });
     }
