@@ -82,8 +82,8 @@ public class ChatActivity extends AppCompatActivity implements
     private MessageAdapter mMessageAdapter;
     private Query mQuery;
 
-    @BindView(R.id.addMessageImageView)
-    ImageView mAddMessageImageView;
+    @BindView(R.id.selectMediaImageView)
+    ImageView mSelectMediaImageView;
 
     @BindView(R.id.messageEditText)
     EditText mMessageEditText;
@@ -180,7 +180,7 @@ public class ChatActivity extends AppCompatActivity implements
             }
         });
 
-        mAddMessageImageView.setOnClickListener(view -> {
+        mSelectMediaImageView.setOnClickListener(view -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
             startActivityForResult(intent, REQUEST_IMAGE);

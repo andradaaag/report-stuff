@@ -46,24 +46,25 @@ import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocati
 public class ReportsListActivity extends AppCompatActivity implements
         ReportAdapter.OnItemClickListener, OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
     private static final int ENTER_CHAT = 1;
+
     public static final String REPORTS_STATUS = "reports_status";
     public final static String TAG = "ReportsListActivity";
+
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private FirebaseFirestore mFirestore;
     private ReportAdapter mAdapter;
     private Query mQuery;
-    private String mReportsStatus;
 
+    private String mReportsStatus;
     private FusedLocationProviderClient fusedLocationClient;
+    private GoogleMap mGoogleMap;
 
     private boolean mListViewVisibility = true;
     private boolean mMapViewVisibility = false;
 
     @BindView(R.id.reportRecyclerView)
     RecyclerView mReportsRecyclerView;
-
-    GoogleMap mGoogleMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +79,6 @@ public class ReportsListActivity extends AppCompatActivity implements
             actionBar.setDisplayShowHomeEnabled(true);
         }
 
-        // Initialize Firebase Auth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
@@ -127,9 +127,7 @@ public class ReportsListActivity extends AppCompatActivity implements
 
             @Override
             protected void onError(FirebaseFirestoreException e) {
-                // Show a snackbar on errors
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Error: check logs for info.", Snackbar.LENGTH_LONG).show();
+                Log.e(TAG, "Error: " + e.getMessage());
             }
         };
 

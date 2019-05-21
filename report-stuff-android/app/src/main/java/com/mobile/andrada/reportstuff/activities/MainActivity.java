@@ -65,9 +65,6 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser mFirebaseUser;
     private FirebaseFirestore mFirestore;
 
-    @BindView(R.id.newReportsButton)
-    Button newReportsButton;
-
     @BindView(R.id.activeReportsButton)
     Button activeReportsButton;
 
@@ -77,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.closedReportsButton)
     Button closedReportsButton;
 
+    @BindView(R.id.newReportsButton)
+    Button newReportsButton;
+
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,18 +84,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        // Initialize location provider
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Initialize Firestore
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
 
-        // Initialize FirebaseAuth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
-        // Handle flow based on user role
         if (mFirebaseUser == null) {
             startActivity(new Intent(this, SignInActivity.class));
             finish();
@@ -186,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void askForHelpOnClick() {
-        // Check if citizen has active report
+        // Check if citizen has active report and either create one or directly open chat
         mFirestore.collection("reports")
                 .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
                 .limit(1).get().addOnCompleteListener(task -> {
@@ -276,13 +272,12 @@ public class MainActivity extends AppCompatActivity {
         checkForLocationPermission(this);
         fusedLocationClient.requestLocationUpdates(locationRequest,
                 locationCallback,
-                null /* Looper */);
+                null);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        startLocationUpdates();
     }
 
     @Override
