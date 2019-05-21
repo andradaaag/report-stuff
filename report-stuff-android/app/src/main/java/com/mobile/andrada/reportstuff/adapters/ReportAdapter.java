@@ -13,6 +13,7 @@ import com.google.firebase.firestore.Query;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.Report;
 import com.mobile.andrada.reportstuff.utils.LocationHelper;
+import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -66,7 +67,7 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
             report.setRid(snapshot.getId());
 
             citizenNameTextView.setText(report.getCitizenName());
-            dateTextView.setText(report.getLatestTime().toString());
+            dateTextView.setText(Utils.prettyTime(report.getLatestTime()));
             locationTextView.setText(LocationHelper.convertGeoPointToAdress(context, report.getLatestLocation()));
         }
     }

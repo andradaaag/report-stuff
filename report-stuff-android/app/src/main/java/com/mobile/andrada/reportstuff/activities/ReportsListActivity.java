@@ -36,6 +36,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.ReportAdapter;
 import com.mobile.andrada.reportstuff.firestore.Report;
+import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -228,7 +229,7 @@ public class ReportsListActivity extends AppCompatActivity implements
                                     report.getLatestLocation().getLatitude(),
                                     report.getLatestLocation().getLongitude()
                             )).title(report.getCitizenName())
-                            .snippet(report.getLatestTime().toString()));
+                            .snippet(Utils.prettyTime(report.getLatestTime())));
                     marker.setTag(doc.getId());
                     marker.showInfoWindow();
                 });
