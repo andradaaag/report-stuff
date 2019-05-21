@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Report Stuff</string>
+    <string name="ask_for_help">Ask For Help</string>
+    <string name="closed_reports">Closed Reports</string>
+    <string name="active_reports">Active Reports</string>
+    <string name="new_reports">New Reports</string>
 </resources>
