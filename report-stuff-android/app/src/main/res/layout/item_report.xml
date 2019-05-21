@@ -8,16 +8,18 @@
     android:layout_marginTop="16dp">
 
     <TextView
-        android:id="@+id/locationTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="76B Marbles Street" />
-
-    <TextView
         android:id="@+id/citizenNameTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Margaret Miller" />
+        android:text="Margaret Miller"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+    <TextView
+        android:id="@+id/locationTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="76B Marbles Street"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 
     <TextView
         android:id="@+id/dateTextView"
