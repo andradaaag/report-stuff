@@ -21,9 +21,10 @@
             android:layout_marginStart="4dp"
             android:layout_marginLeft="4dp"
             android:background="@drawable/rounded_button"
-            android:drawableTop="@drawable/new_report_icon"
             android:baselineAligned="false"
+            android:drawableTop="@drawable/new_report_icon"
             android:text="@string/new_reports"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/closedReportsButton"
             app:layout_constraintStart_toStartOf="parent" />
 
@@ -38,6 +39,7 @@
             android:background="@drawable/rounded_button"
             android:drawableTop="@drawable/active_report_icon"
             android:text="@string/active_reports"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/closedReportsButton"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/newReportsButton" />
@@ -52,8 +54,9 @@
             android:layout_marginEnd="8dp"
             android:layout_marginRight="8dp"
             android:background="@drawable/rounded_button"
-            android:text="@string/closed_reports"
             android:drawableTop="@drawable/closed_report_icon"
+            android:text="@string/closed_reports"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -63,11 +66,11 @@
 
     <Button
         android:id="@+id/askForHelpButton"
-        android:background="@drawable/rounded_button_help"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/ask_for_help"
+        android:background="@drawable/rounded_button_help"
         android:drawableTop="@drawable/alarm_icon"
+        android:text="@string/ask_for_help"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
