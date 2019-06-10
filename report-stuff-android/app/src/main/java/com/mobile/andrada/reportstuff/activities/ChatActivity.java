@@ -1,5 +1,6 @@
 package com.mobile.andrada.reportstuff.activities;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -10,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,6 +19,8 @@ import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -47,6 +51,7 @@ import java.util.Calendar;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.MY_PERMISSIONS_REQUEST_ACCESS_LOCATION;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
@@ -58,10 +63,14 @@ public class ChatActivity extends AppCompatActivity implements
     public final static String ANONYMOUS = "anonymous";
     public static final String CHAT_MSG_LENGTH = "chat_msg_length";
     public static final String EXTRA_MEDIA_URI = "extra_media_uri";
+    public static final String IS_OFFICIAL = "is_official";
     public static final String MEDIA_URL_FIELD = "mediaUrl";
     public static final String MESSAGES_CHILD = "messages";
     public final static String REPORT_ID = "report_id";
     public static final String REPORTS_CHILD = "reports";
+    public static final String STATUS_FIELD = "status";
+    public static final String STATUS_CLOSED = "closed";
+    public static final String STATUS_OPEN = "open";
     public final static String TAG = "ChatActivity";
 
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
@@ -71,6 +80,8 @@ public class ChatActivity extends AppCompatActivity implements
     private String mDisplayName;
     private String mPhotoUrl;
     private String mReportId;
+    private String mReportStatus;
+    private boolean mIsOfficial;
 
     private FusedLocationProviderClient fusedLocationClient;
     private MediaPlayer mMediaPlayer;
@@ -130,6 +141,8 @@ public class ChatActivity extends AppCompatActivity implements
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
 
+        mReportStatus = getIntent().getStringExtra(REPORTS_STATUS);
+
         // reportID is never empty!
         mReportId = getIntent().getStringExtra(REPORT_ID);
         mQuery = mFirestore.collection(REPORTS_CHILD)
@@ -168,7 +181,7 @@ public class ChatActivity extends AppCompatActivity implements
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (charSequence.toString().trim().length() > 0) {
+                if (charSequence.toString().trim().length() > 0 && !mReportStatus.equals(STATUS_CLOSED)) {
                     mSendButton.setEnabled(true);
                 } else {
                     mSendButton.setEnabled(false);
@@ -181,14 +194,26 @@ public class ChatActivity extends AppCompatActivity implements
         });
 
         mSelectMediaImageView.setOnClickListener(view -> {
+            if (mReportStatus.equals(STATUS_CLOSED)) {
+                return;
+            }
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
             startActivityForResult(intent, REQUEST_IMAGE);
         });
 
-        mSendButton.setOnClickListener(view -> {
-            addMessageToFirestore("text", task -> mMessageEditText.setText(""));
-        });
+        mSendButton.setOnClickListener(view -> addMessageToFirestore("text", task -> mMessageEditText.setText("")));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        mIsOfficial = getIntent().getBooleanExtra(IS_OFFICIAL, false);
+        if (!mIsOfficial || mReportStatus.equals(STATUS_CLOSED))
+            return false;
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.report_menu, menu);
+
+        return true;
     }
 
     @Override
@@ -213,8 +238,33 @@ public class ChatActivity extends AppCompatActivity implements
         int id = item.getItemId();
         if (id == android.R.id.home) {
             finish();
+        } else if (id == R.id.more_menu) {
+            handleCloseReport();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void handleCloseReport() {
+        if (!mIsOfficial || mReportStatus.equals(STATUS_CLOSED))
+            return;
+        DialogInterface.OnClickListener dialogClickListener = (dialog, which) -> {
+            switch (which) {
+                case DialogInterface.BUTTON_POSITIVE:
+                    mFirestore.collection(REPORTS_CHILD)
+                            .document(mReportId)
+                            .update(STATUS_FIELD, STATUS_CLOSED);
+                    finish();
+                    break;
+
+                case DialogInterface.BUTTON_NEGATIVE:
+                    break;
+            }
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure you want to close this report?")
+                .setPositiveButton("Yes", dialogClickListener)
+                .setNegativeButton("No", dialogClickListener).show();
     }
 
     @Override

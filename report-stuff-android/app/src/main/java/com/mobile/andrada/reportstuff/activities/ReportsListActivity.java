@@ -41,6 +41,8 @@ import com.mobile.andrada.reportstuff.utils.Utils;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.IS_OFFICIAL;
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 
 public class ReportsListActivity extends AppCompatActivity implements
@@ -48,7 +50,7 @@ public class ReportsListActivity extends AppCompatActivity implements
     private static final int ENTER_CHAT = 1;
 
     public static final String REPORTS_STATUS = "reports_status";
-    public final static String TAG = "ReportsListActivity";
+    private static final String TAG = "ReportsListActivity";
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -291,8 +293,9 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     public void openChatForReport(String reportID) {
         Intent intent = new Intent(ReportsListActivity.this, ChatActivity.class);
-        intent.putExtra(ChatActivity.REPORT_ID, reportID);
+        intent.putExtra(REPORT_ID, reportID);
         intent.putExtra(REPORTS_STATUS, mReportsStatus);
+        intent.putExtra(IS_OFFICIAL, true);
         startActivityForResult(intent, ENTER_CHAT);
     }
 }

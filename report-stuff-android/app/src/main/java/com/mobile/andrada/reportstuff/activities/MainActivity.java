@@ -35,7 +35,9 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.IS_OFFICIAL;
 import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.STATUS_OPEN;
 import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
@@ -233,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
     private void openChat() {
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra(REPORT_ID, mReportID);
+        intent.putExtra(IS_OFFICIAL, false);
+        intent.putExtra(REPORTS_STATUS, STATUS_OPEN);
         startActivityForResult(intent, ENTER_CHAT);
     }
 
