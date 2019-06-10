@@ -154,26 +154,38 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
 
 async function determineRoles(mediaType, mediaUrl, text) {
     let roles = [];
-    if (mediaType === "text") {
-        if (text.includes("fire")) {
-            roles.push("firefighter");
-            console.log("Found keyword 'fire', calling firefighters");
-        }
-        if (text.includes("broke my arm") || text.includes("doctor")) {
-            roles.push("smurd");
-            console.log("Found keywords related to medical assistance, calling smurd");
-        }
-    } else if (mediaType === "image") {
-        roles.push(await handleImage(mediaUrl))
-    } else if (mediaType === "video") {
-        //TODO: handle video to determine role
-    } else if (mediaType === "audio") {
-        //TODO: handle audio to determine role
+    switch (mediaType) {
+        case "text":
+            roles = handleText(text);
+            break;
+        case "image":
+            roles = await handleImage(mediaUrl);
+            break;
+        case "video":
+            //TODO: handle video to determine role
+            break;
+        case "audio":
+            //TODO: handle audio to determine role
+            break;
+    }
+    return roles;
+}
+
+function handleText(text) {
+    let roles = [];
+    if (text.includes("fire")) {
+        roles.push("firefighter");
+        console.log("Found keyword 'fire', calling firefighters");
+    }
+    if (text.includes("broke my arm") || text.includes("doctor")) {
+        roles.push("smurd");
+        console.log("Found keywords related to medical assistance, calling smurd");
     }
     return roles;
 }
 
 async function handleImage(mediaUrl) {
+    let roles = [];
     // Imports the Google Cloud client library
     const vision = require('@google-cloud/vision');
 
@@ -183,8 +195,20 @@ async function handleImage(mediaUrl) {
     // Performs label detection on the image file
     const [result] = await client.labelDetection(mediaUrl);
     const labels = result.labelAnnotations;
-    console.log('Labels:');
-    labels.forEach(label => console.log(label.description));
+    let labelDescriptions = [];
+    labels.forEach(label => {
+        const labelDescription = label.description;
+        labelDescriptions.push(labelDescription);
+
+        // Determine role
+        if (labelDescription.includes("Fire") || labelDescription.includes("Flame") || labelDescription.includes("Explosion")) {
+            if (!roles.includes("firefighter"))
+                roles.push("firefighter");
+            console.log("Found keywords related to fire, calling firefighters");
+        }
+    });
+    console.log("Labels: ", labelDescriptions);
+    return roles;
 }
 
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
