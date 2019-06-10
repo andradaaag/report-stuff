@@ -202,7 +202,8 @@ public class ChatActivity extends AppCompatActivity implements
             startActivityForResult(intent, REQUEST_IMAGE);
         });
 
-        mSendButton.setOnClickListener(view -> addMessageToFirestore("text", task -> mMessageEditText.setText("")));
+        mSendButton.setOnClickListener(view -> addMessageToFirestore("text", null,
+                task -> mMessageEditText.setText("")));
     }
 
     @Override
@@ -311,7 +312,7 @@ public class ChatActivity extends AppCompatActivity implements
         }
     }
 
-    public void addMessageToFirestore(String mediaType, OnCompleteListener<DocumentReference> onCompleteListener) {
+    public void addMessageToFirestore(String mediaType, String mediaUrl, OnCompleteListener<DocumentReference> onCompleteListener) {
         if (!checkForLocationPermission(this)) {
             return;
         }
@@ -322,7 +323,7 @@ public class ChatActivity extends AppCompatActivity implements
                             mFirebaseUser.getEmail(),
                             convertLocation(location),
                             mediaType,
-                            null,
+                            mediaUrl,
                             mDisplayName,
                             mPhotoUrl,
                             mMessageEditText.getText().toString(),
@@ -338,34 +339,24 @@ public class ChatActivity extends AppCompatActivity implements
     }
 
     protected void addMediaMessageToFirestore(final Uri uri, final String mediaType) {
-        addMessageToFirestore(mediaType, task -> {
-            if (task.isSuccessful()) {
-                DocumentReference docRef = task.getResult();
-                String key = docRef.getId();
-                StorageReference storageReference =
-                        FirebaseStorage.getInstance()
-                                .getReference(mFirebaseUser.getUid())
-                                .child(key)
-                                .child(uri.getLastPathSegment());
+        // First put media in storage
+        StorageReference storageReference =
+                FirebaseStorage.getInstance()
+                        .getReference(mFirebaseUser.getUid())
+                        .child(uri.getLastPathSegment());
 
-                putMediaInStorage(storageReference, uri, key, mediaType);
-            } else {
-                Log.w(TAG, "Unable to write message to database.", task.getException());
-            }
-        });
-    }
-
-    private void putMediaInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
         storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
                 task -> {
                     String bucket = storageReference.getBucket();
                     String path = storageReference.getPath();
                     String mediaUrl = "gs://" + bucket + path;
-                    mFirestore.collection(REPORTS_CHILD)
-                            .document(mReportId)
-                            .collection(MESSAGES_CHILD)
-                            .document(key)
-                            .update(MEDIA_URL_FIELD, mediaUrl);
+
+                    // Then add message with mediaUrl in firestore
+                    addMessageToFirestore(mediaType, mediaUrl, task2 -> {
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "Unable to write message to database.", task.getException());
+                        }
+                    });
                 }
         );
     }
