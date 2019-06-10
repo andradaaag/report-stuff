@@ -357,18 +357,16 @@ public class ChatActivity extends AppCompatActivity implements
 
     private void putMediaInStorage(final StorageReference storageReference, Uri uri, final String key, final String mediaType) {
         storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
-                task -> storageReference.getDownloadUrl()
-                        .addOnSuccessListener(
-                                uri1 ->
-                                        mFirestore.collection(REPORTS_CHILD)
-                                                .document(mReportId)
-                                                .collection(MESSAGES_CHILD)
-                                                .document(key)
-                                                .update(MEDIA_URL_FIELD, uri1.toString())
-                        ).addOnFailureListener(
-                                e ->
-                                        Log.w(TAG, "Image upload task was not successful.", e)
-                        )
+                task -> {
+                    String bucket = storageReference.getBucket();
+                    String path = storageReference.getPath();
+                    String mediaUrl = "gs://" + bucket + path;
+                    mFirestore.collection(REPORTS_CHILD)
+                            .document(mReportId)
+                            .collection(MESSAGES_CHILD)
+                            .document(key)
+                            .update(MEDIA_URL_FIELD, mediaUrl);
+                }
         );
     }
 
