@@ -155,7 +155,6 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
 async function determineRoles(mediaType, mediaUrl, text) {
     let roles = [];
     if (mediaType === "text") {
-        //TODO: handle text to determine role
         if (text.includes("fire")) {
             roles.push("firefighter");
             console.log("Found keyword 'fire', calling firefighters");
@@ -165,13 +164,27 @@ async function determineRoles(mediaType, mediaUrl, text) {
             console.log("Found keywords related to medical assistance, calling smurd");
         }
     } else if (mediaType === "image") {
-        //TODO: handle image to determine role
+        roles.push(await handleImage(mediaUrl))
     } else if (mediaType === "video") {
         //TODO: handle video to determine role
     } else if (mediaType === "audio") {
         //TODO: handle audio to determine role
     }
     return roles;
+}
+
+async function handleImage(mediaUrl) {
+    // Imports the Google Cloud client library
+    const vision = require('@google-cloud/vision');
+
+    // Creates a client
+    const client = new vision.ImageAnnotatorClient();
+
+    // Performs label detection on the image file
+    const [result] = await client.labelDetection(mediaUrl);
+    const labels = result.labelAnnotations;
+    console.log('Labels:');
+    labels.forEach(label => console.log(label.description));
 }
 
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
