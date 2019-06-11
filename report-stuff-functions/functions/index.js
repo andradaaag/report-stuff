@@ -165,7 +165,7 @@ exports.sendInitialNotificationToPolicemen = functions.firestore.document('repor
         const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
         console.log("Is official or bot: " + isOfficialOrBot);
         if (isOfficialOrBot)
-            return void callback();
+            return true;
 
         const citizenLocation = newReport.latestLocation;
         const citizenName = newReport.citizenName;
@@ -188,7 +188,7 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
         console.log("Is official or bot: " + isOfficialOrBot);
         if (isOfficialOrBot)
-            return void callback();
+            return true;
 
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
@@ -281,7 +281,7 @@ async function sendNotificationToRoleNearby(email, location, name, radius, repor
     const isOfficialOrBot = await checkUserIsOfficial(email) || await checkUserIsBot(email);
     console.log("Is official or bot: " + isOfficialOrBot);
     if (isOfficialOrBot)
-        return void callback();
+        return true;
 
     const data = await getOfficialsNearby(location, role, radius);
     await addOfficialToNotifiedOfficialsListOfReport(data, reportId);
