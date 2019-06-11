@@ -5,6 +5,31 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+const bot = {
+    email: "botreportstuff@gmail.com",
+    name: "Bot Report",
+    photoUrl: "https://firebasestorage.googleapis.com/v0/b/reportstuff.appspot.com/o/bot%2Fbot_picture.png?alt=media&token=b486d550-20d4-4547-a592-aa40f5c88592",
+};
+
+exports.makeBot = functions.https.onCall((data, context) => {
+    const email = data.email;
+    return grantBotRole(email).then(() => {
+        return {
+            result: `Request fulfilled! ${email} is now a bot.`
+        };
+    });
+});
+
+async function grantBotRole(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    if (user.customClaims && user.customClaims.bot === true) {
+        return false;
+    }
+    return admin.auth().setCustomUserClaims(user.uid, {
+        bot: true
+    });
+}
+
 
 exports.makePoliceman = functions.https.onCall((data, context) => {
     // Commented for development purposes
@@ -96,9 +121,10 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
 
 async function updateReportWithActiveOfficials(reportId, email) {
     const newReport = {
-        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, email)
+        activeOfficials: admin.firestore.FieldValue.arrayUnion.apply(null, [email]),
+        notifiedOfficials: admin.firestore.FieldValue.arrayRemove.apply(null, [email])
     };
-    console.log("Updating report", reportId, "with status and activeOfficials", newReport);
+    console.log("Updating report", reportId, "with status, activeOfficials and notifiedOfficials", newReport);
     return admin.firestore().collection("reports").doc(reportId).update(newReport);
 }
 
@@ -120,23 +146,44 @@ async function checkUserIsOfficial(email) {
     ));
 }
 
+async function checkUserIsBot(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    return (user.customClaims && user.customClaims.bot === true);
+}
+
 exports.sendInitialNotificationToPolicemen = functions.firestore.document('reports/{reportId}')
     .onCreate(async (snap, context) => {
         const newReport = snap.data();
         const citizenEmail = newReport.citizenEmail;
+
+        const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
+        console.log("Is official or bot: " + isOfficialOrBot);
+        if (isOfficialOrBot)
+            return void callback();
+
         const citizenLocation = newReport.latestLocation;
         const citizenName = newReport.citizenName;
         const radius = 5000; // Radius of 5km (or 5000m)
         const reportId = context.params.reportId;
         const role = "policeman";
 
-        return sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role)
+        const promises = [];
+        promises.push(sendBotMessage(reportId, "The nearest policeman teams were notified of your emergency." +
+            " Please describe it using text, images, audio or video recordings.", newReport.latestTime));
+        promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role));
+        return Promise.all(promises);
     });
 
 exports.sendNotificationToOtherOfficials = functions.firestore.document('reports/{reportId}/messages/{messageId}')
     .onCreate(async (snap, context) => {
         const newMessage = snap.data();
         const citizenEmail = newMessage.email;
+
+        const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
+        console.log("Is official or bot: " + isOfficialOrBot);
+        if (isOfficialOrBot)
+            return void callback();
+
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
         const radius = 5000; // Radius of 5km (or 5000m)
@@ -146,37 +193,88 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
 
         const promises = [];
         roles.forEach(role => {
-            promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role))
+            promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role));
+            promises.push(sendBotMessage(reportId, "The nearest " + role + " teams were notified of your emergency.", newMessage.time))
         });
         return Promise.all(promises);
     });
 
 async function determineRoles(mediaType, mediaUrl, text) {
     let roles = [];
-    if (mediaType === "text") {
-        //TODO: handle text to determine role
-        if (text.includes("fire")) {
-            roles.push("firefighter");
-            console.log("Found keyword 'fire', calling firefighters");
-        }
-        if (text.includes("broke my arm") || text.includes("doctor")) {
-            roles.push("smurd");
-            console.log("Found keywords related to medical assistance, calling smurd");
-        }
-    } else if (mediaType === "image") {
-        //TODO: handle image to determine role
-    } else if (mediaType === "video") {
-        //TODO: handle video to determine role
-    } else if (mediaType === "audio") {
-        //TODO: handle audio to determine role
+    switch (mediaType) {
+        case "text":
+            roles = handleText(text);
+            break;
+        case "image":
+            roles = await handleImage(mediaUrl);
+            break;
+        case "video":
+            //TODO: handle video to determine role
+            break;
+        case "audio":
+            //TODO: handle audio to determine role
+            break;
     }
     return roles;
 }
 
+function handleText(text) {
+    let roles = [];
+    if (text.includes("fire") || text.includes("flame") || text.includes("explosion")) {
+        roles.push("firefighter");
+        console.log("Found keyword 'fire', calling firefighters");
+    }
+    if ((text.includes("broke") && text.includes("arm")) || text.includes("doctor") || text.includes("in labour")) {
+        roles.push("smurd");
+        console.log("Found keywords related to medical assistance, calling smurd");
+    }
+    return roles;
+}
+
+async function handleImage(mediaUrl) {
+    const vision = require('@google-cloud/vision');
+    const client = new vision.ImageAnnotatorClient();
+    const [result] = await client.labelDetection(mediaUrl);
+
+    const labels = result.labelAnnotations;
+    let labelDescriptions = [];
+    let roles = [];
+
+    labels.forEach(label => {
+        const labelDescription = label.description;
+        labelDescriptions.push(labelDescription);
+
+        if (labelDescription.includes("Fire") || labelDescription.includes("Flame") || labelDescription.includes("Explosion")) {
+            if (!roles.includes("firefighter"))
+                roles.push("firefighter");
+            console.log("Found keywords related to fire, calling firefighters");
+        }
+
+        if (labelDescription.includes("Crash") || labelDescription.includes("Explosion")) {
+            if (!roles.includes("smurd"))
+                roles.push("smurd");
+            console.log("Found keywords related to possible injuries, calling smurd");
+        }
+    });
+    console.log("Labels: ", labelDescriptions);
+    return roles;
+}
+
+async function sendBotMessage(reportId, text, time) {
+    return admin.firestore().collection("reports").doc(reportId).collection("messages").add({
+        email: bot.email,
+        mediaType: "text",
+        name: bot.name,
+        photoUrl: bot.photoUrl,
+        text: text,
+        time: time
+    })
+}
+
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
-    const isOfficial = await checkUserIsOfficial(email);
-    console.log(isOfficial);
-    if (isOfficial)
+    const isOfficialOrBot = await checkUserIsOfficial(email) || await checkUserIsBot(email);
+    console.log("Is official or bot: " + isOfficialOrBot);
+    if (isOfficialOrBot)
         return void callback();
 
     const data = await getOfficialsNearby(location, role, radius);
@@ -238,6 +336,8 @@ async function addOfficialToNotifiedOfficialsListOfReport(data, reportId) {
         let email_token = d['i'].split(" ");
         emails.push(email_token[0]);
     });
+
+    emails = emails.filter(item => item !== bot.email);
 
     // Add officials to notifiedOfficials list of the report
     console.log("Notified officials: ", emails);
