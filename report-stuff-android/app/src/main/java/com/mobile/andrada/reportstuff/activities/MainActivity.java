@@ -187,14 +187,10 @@ public class MainActivity extends AppCompatActivity {
         // Check if citizen has active report and either create one or directly open chat
         mFirestore.collection("reports")
                 .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
-                .limit(1).get().addOnCompleteListener(task -> {
+                .whereEqualTo("status", "open")
+                .get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
-                for (DocumentSnapshot report : reports) {
-                    String status = (String) report.get("status");
-                    if (status.contains("closed"))
-                        reports.remove(report);
-                }
                 if (reports.size() > 0) {
                     mReportID = reports.get(0).getId();
                     openChat();
