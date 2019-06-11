@@ -89,7 +89,11 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         }
 
         void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
-            message = snapshot.toObject(Message.class);
+            try {
+                message = snapshot.toObject(Message.class);
+            } catch (Exception e) {
+                Log.e("MessageAdapter", "Error when casting to Message class" + e.getMessage());
+            }
             openVideoButton.setOnClickListener(view -> {
                 if (listener != null) {
                     listener.onOpenVideoClicked(snapshot);
