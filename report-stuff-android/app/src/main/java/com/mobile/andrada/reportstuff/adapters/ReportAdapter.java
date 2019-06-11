@@ -12,14 +12,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.Report;
+import com.mobile.andrada.reportstuff.utils.LocationHelper;
 import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-/**
- * RecyclerView adapter for a list of Reports.
- */
 public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
     private OnItemClickListener mListener;
     private Context context;
@@ -49,14 +47,14 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
     class ViewHolder extends RecyclerView.ViewHolder {
         Report report;
 
-        @BindView(R.id.locationTextView)
-        TextView locationTextView;
-
         @BindView(R.id.citizenNameTextView)
         TextView citizenNameTextView;
 
         @BindView(R.id.dateTextView)
         TextView dateTextView;
+
+        @BindView(R.id.locationTextView)
+        TextView locationTextView;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -68,9 +66,9 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
             report = snapshot.toObject(Report.class);
             report.setRid(snapshot.getId());
 
-            locationTextView.setText(Utils.convertGeoPointToAdress(context, report.getLatestLocation()));
             citizenNameTextView.setText(report.getCitizenName());
-            dateTextView.setText(report.getLatestTime().toString());
+            dateTextView.setText(Utils.prettyTime(report.getLatestTime()));
+            locationTextView.setText(LocationHelper.convertGeoPointToAdress(context, report.getLatestLocation()));
         }
     }
 }

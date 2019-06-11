@@ -30,6 +30,7 @@ dependencies {
 
     implementation 'com.github.bumptech.glide:glide:4.7.1'
     implementation 'de.hdodenhof:circleimageview:2.2.0'
+    implementation 'org.ocpsoft.prettytime:prettytime:4.0.1.Final'
 
     // ButterKnife
     implementation 'com.jakewharton:butterknife:8.8.1'
@@ -53,14 +54,12 @@ dependencies {
     annotationProcessor "android.arch.lifecycle:compiler:1.1.1"
     annotationProcessor 'android.arch.persistence.room:compiler:1.1.1'
 
-    // Firestore
-    implementation 'com.google.firebase:firebase-firestore:18.2.0'
-
     // Firebase
     implementation 'com.google.firebase:firebase-core:16.0.8'
     implementation 'com.google.firebase:firebase-auth:16.2.1'
     implementation 'com.google.firebase:firebase-storage:16.1.0'
     implementation 'com.google.firebase:firebase-messaging:17.6.0'
+    implementation 'com.google.firebase:firebase-firestore:18.2.0'
 
     // Firebase UI
     implementation 'com.firebaseui:firebase-ui-database:4.2.0'
