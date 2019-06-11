@@ -173,11 +173,11 @@ async function determineRoles(mediaType, mediaUrl, text) {
 
 function handleText(text) {
     let roles = [];
-    if (text.includes("fire")) {
+    if (text.includes("fire") || text.includes("flame") || text.includes("explosion")) {
         roles.push("firefighter");
         console.log("Found keyword 'fire', calling firefighters");
     }
-    if (text.includes("broke my arm") || text.includes("doctor")) {
+    if ((text.includes("broke") && text.includes("arm")) || text.includes("doctor") || text.includes("in labour")) {
         roles.push("smurd");
         console.log("Found keywords related to medical assistance, calling smurd");
     }
@@ -185,26 +185,28 @@ function handleText(text) {
 }
 
 async function handleImage(mediaUrl) {
-    let roles = [];
-    // Imports the Google Cloud client library
     const vision = require('@google-cloud/vision');
-
-    // Creates a client
     const client = new vision.ImageAnnotatorClient();
-
-    // Performs label detection on the image file
     const [result] = await client.labelDetection(mediaUrl);
+
     const labels = result.labelAnnotations;
     let labelDescriptions = [];
+    let roles = [];
+
     labels.forEach(label => {
         const labelDescription = label.description;
         labelDescriptions.push(labelDescription);
 
-        // Determine role
         if (labelDescription.includes("Fire") || labelDescription.includes("Flame") || labelDescription.includes("Explosion")) {
             if (!roles.includes("firefighter"))
                 roles.push("firefighter");
             console.log("Found keywords related to fire, calling firefighters");
+        }
+
+        if (labelDescription.includes("Crash") || labelDescription.includes("Explosion")) {
+            if (!roles.includes("smurd"))
+                roles.push("smurd");
+            console.log("Found keywords related to possible injuries, calling smurd");
         }
     });
     console.log("Labels: ", labelDescriptions);
