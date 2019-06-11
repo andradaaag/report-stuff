@@ -172,10 +172,10 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const newMessage = snap.data();
         const citizenEmail = newMessage.email;
 
-        const isOfficial = await checkUserIsOfficial(email);
+        const isOfficial = await checkUserIsOfficial(citizenEmail);
         console.log("Is official: " + isOfficial);
         if (isOfficial)
-            return void callback();
+            return;
 
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
