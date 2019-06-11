@@ -111,11 +111,17 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
         const newMessage = snap.data();
         const email = newMessage.email;
         const reportId = context.params.reportId;
+
+        const isBot = await checkUserIsBot(email);
         const isOfficial = await checkUserIsOfficial(email);
-        console.log(isOfficial);
-        if (isOfficial) {
-            return updateReportWithActiveOfficials(reportId, email)
-        }
+
+        console.log("IsBot: " + isBot);
+        console.log("IsOfficial: " + isOfficial);
+
+        if (isBot)
+            return true;
+        if (isOfficial)
+            return updateReportWithActiveOfficials(reportId, email);
         return updateReportWithLocationAndTimestamp(reportId, newMessage.time, newMessage.location)
     });
 
@@ -159,7 +165,7 @@ exports.sendInitialNotificationToPolicemen = functions.firestore.document('repor
         const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
         console.log("Is official or bot: " + isOfficialOrBot);
         if (isOfficialOrBot)
-            return void callback();
+            return true;
 
         const citizenLocation = newReport.latestLocation;
         const citizenName = newReport.citizenName;
@@ -182,7 +188,7 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
         console.log("Is official or bot: " + isOfficialOrBot);
         if (isOfficialOrBot)
-            return void callback();
+            return true;
 
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
@@ -275,7 +281,7 @@ async function sendNotificationToRoleNearby(email, location, name, radius, repor
     const isOfficialOrBot = await checkUserIsOfficial(email) || await checkUserIsBot(email);
     console.log("Is official or bot: " + isOfficialOrBot);
     if (isOfficialOrBot)
-        return void callback();
+        return true;
 
     const data = await getOfficialsNearby(location, role, radius);
     await addOfficialToNotifiedOfficialsListOfReport(data, reportId);
