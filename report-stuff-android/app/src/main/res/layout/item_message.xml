@@ -24,8 +24,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:text=""
-            android:textAppearance="?android:attr/textAppearanceLarge" />
+            android:text="This is the text in a message"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="16sp" />
 
         <ImageView
             android:id="@+id/messageImageView"
@@ -81,7 +82,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
+            android:text="Sender Name • Time"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textSize="12sp" />
 
     </LinearLayout>
 
