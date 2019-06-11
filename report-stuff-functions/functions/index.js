@@ -5,6 +5,11 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+const bot = {
+    email: "botreportstuff@gmail.com",
+    name: "Bot Report",
+    photoUrl: "https://firebasestorage.googleapis.com/v0/b/reportstuff.appspot.com/o/bot%2Fbot_picture.png?alt=media&token=b486d550-20d4-4547-a592-aa40f5c88592",
+};
 
 exports.makeBot = functions.https.onCall((data, context) => {
     const email = data.email;
@@ -258,6 +263,17 @@ async function handleImage(mediaUrl) {
     return roles;
 }
 
+async function sendBotMessage(reportId, text, time) {
+    return admin.firestore().collection("reports").doc(reportId).collection("messages").add({
+        email: bot.email,
+        mediaType: "text",
+        name: bot.name,
+        photoUrl: bot.photoUrl,
+        text: text,
+        time: time
+    })
+}
+
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
     const isOfficialOrBot = await checkUserIsOfficial(email) || await checkUserIsBot(email);
     console.log("Is official or bot: " + isOfficialOrBot);
@@ -323,6 +339,8 @@ async function addOfficialToNotifiedOfficialsListOfReport(data, reportId) {
         let email_token = d['i'].split(" ");
         emails.push(email_token[0]);
     });
+
+    emails = emails.filter(item => item !== bot.email);
 
     // Add officials to notifiedOfficials list of the report
     console.log("Notified officials: ", emails);
