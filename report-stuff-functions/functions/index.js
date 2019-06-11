@@ -7,12 +7,6 @@ admin.initializeApp();
 
 
 exports.makeBot = functions.https.onCall((data, context) => {
-    // Commented for development purposes
-    // if (context.auth.token.policeman !== true) {
-    //     return {
-    //         error: "Request not authorized. User must be a policeman to fulfill request."
-    //     };
-    // }
     const email = data.email;
     return grantBotRole(email).then(() => {
         return {
@@ -144,8 +138,12 @@ async function checkUserIsOfficial(email) {
         user.customClaims.policeman === true
         || user.customClaims.firefighter === true
         || user.customClaims.smurd === true
-        || user.customClaims.bot === true
     ));
+}
+
+async function checkUserIsBot(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    return (user.customClaims && user.customClaims.bot === true);
 }
 
 exports.sendInitialNotificationToPolicemen = functions.firestore.document('reports/{reportId}')
@@ -153,9 +151,9 @@ exports.sendInitialNotificationToPolicemen = functions.firestore.document('repor
         const newReport = snap.data();
         const citizenEmail = newReport.citizenEmail;
 
-        const isOfficial = await checkUserIsOfficial(citizenEmail);
-        console.log("Is official: " + isOfficial);
-        if (isOfficial)
+        const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
+        console.log("Is official or bot: " + isOfficialOrBot);
+        if (isOfficialOrBot)
             return void callback();
 
         const citizenLocation = newReport.latestLocation;
@@ -172,10 +170,10 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const newMessage = snap.data();
         const citizenEmail = newMessage.email;
 
-        const isOfficial = await checkUserIsOfficial(citizenEmail);
-        console.log("Is official: " + isOfficial);
-        if (isOfficial)
-            return;
+        const isOfficialOrBot = await checkUserIsOfficial(citizenEmail) || await checkUserIsBot(citizenEmail);
+        console.log("Is official or bot: " + isOfficialOrBot);
+        if (isOfficialOrBot)
+            return void callback();
 
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
@@ -261,9 +259,9 @@ async function handleImage(mediaUrl) {
 }
 
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
-    const isOfficial = await checkUserIsOfficial(email);
-    console.log("Is official: " + isOfficial);
-    if (isOfficial)
+    const isOfficialOrBot = await checkUserIsOfficial(email) || await checkUserIsBot(email);
+    console.log("Is official or bot: " + isOfficialOrBot);
+    if (isOfficialOrBot)
         return void callback();
 
     const data = await getOfficialsNearby(location, role, radius);
