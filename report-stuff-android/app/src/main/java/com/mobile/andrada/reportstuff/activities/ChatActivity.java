@@ -73,7 +73,7 @@ public class ChatActivity extends AppCompatActivity implements
     public static final String STATUS_OPEN = "open";
     public final static String TAG = "ChatActivity";
 
-    public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
+    public static final int DEFAULT_MSG_LENGTH_LIMIT = 200;
     private static final int PLAY_MEDIA = 2;
     private static final int REQUEST_IMAGE = 1;
 
