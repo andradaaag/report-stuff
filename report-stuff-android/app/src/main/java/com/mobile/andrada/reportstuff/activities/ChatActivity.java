@@ -346,16 +346,28 @@ public class ChatActivity extends AppCompatActivity implements
 
         storageReference.putFile(uri).addOnCompleteListener(ChatActivity.this,
                 task -> {
-                    String bucket = storageReference.getBucket();
-                    String path = storageReference.getPath();
-                    String mediaUrl = "gs://" + bucket + path;
-
-                    // Then add message with mediaUrl in firestore
-                    addMessageToFirestore(mediaType, mediaUrl, task2 -> {
-                        if (!task.isSuccessful()) {
-                            Log.w(TAG, "Unable to write message to database.", task.getException());
-                        }
-                    });
+                    if (mediaType.equals("image")) {
+                        String bucket = storageReference.getBucket();
+                        String path = storageReference.getPath();
+                        String mediaUrl = "gs://" + bucket + path;
+                        addMessageToFirestore(mediaType, mediaUrl, task2 -> {
+                            if (!task2.isSuccessful()) {
+                                Log.w(TAG, "Unable to write message to database.", task2.getException());
+                            }
+                        });
+                    } else if (mediaType.equals("audio") || mediaType.equals("video")) {
+                        storageReference.getDownloadUrl().addOnSuccessListener(
+                                uri1 ->
+                                        addMessageToFirestore(mediaType, uri1.toString(), task2 -> {
+                                            if (!task2.isSuccessful()) {
+                                                Log.w(TAG, "Unable to write message to database.", task2.getException());
+                                            }
+                                        })
+                        ).addOnFailureListener(
+                                e ->
+                                        Log.w(TAG, "Image upload task was not successful.", e)
+                        );
+                    }
                 }
         );
     }

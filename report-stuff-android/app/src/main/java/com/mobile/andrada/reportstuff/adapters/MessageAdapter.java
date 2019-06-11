@@ -88,6 +88,15 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
             ButterKnife.bind(this, itemView);
         }
 
+        void makeAllGone(){
+            messageTextView.setVisibility(TextView.GONE);
+            messageImageView.setVisibility(ImageView.GONE);
+            openVideoButton.setVisibility(Button.GONE);
+            playAudioButton.setVisibility(Button.GONE);
+            pauseAudioButton.setVisibility(Button.GONE);
+            stopAudioButton.setVisibility(Button.GONE);
+        }
+
         void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
             try {
                 message = snapshot.toObject(Message.class);
@@ -103,27 +112,27 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                 if (listener != null) {
                     listener.onPlayAudioClicked(snapshot);
                 }
+                makeAllGone();
                 pauseAudioButton.setVisibility(Button.VISIBLE);
                 stopAudioButton.setVisibility(Button.VISIBLE);
-                playAudioButton.setVisibility(Button.GONE);
             });
             pauseAudioButton.setOnClickListener(view -> {
                 if (listener != null) {
                     listener.onPauseAudioClicked(snapshot);
                 }
+                makeAllGone();
                 playAudioButton.setVisibility(Button.VISIBLE);
                 stopAudioButton.setVisibility(Button.VISIBLE);
-                pauseAudioButton.setVisibility(Button.GONE);
             });
             stopAudioButton.setOnClickListener(view -> {
                 if (listener != null) {
                     listener.onStopAudioClicked(snapshot);
                 }
+                makeAllGone();
                 playAudioButton.setVisibility(Button.VISIBLE);
-                pauseAudioButton.setVisibility(Button.GONE);
-                stopAudioButton.setVisibility(Button.GONE);
             });
 
+            makeAllGone();
             handleMessenger();
             switch (message.getMediaType()) {
                 case "text":
@@ -158,6 +167,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         }
 
         private void handleText() {
+            makeAllGone();
             if (message.getText() != null && !message.getText().isEmpty()) {
                 messageTextView.setText(message.getText());
                 messageTextView.setVisibility(TextView.VISIBLE);
@@ -165,6 +175,7 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         }
 
         private void handleImage() {
+            makeAllGone();
             if (message.getMediaUrl() != null) {
                 String imageUrl = message.getMediaUrl();
                 if (imageUrl.startsWith("gs://")) {
@@ -188,18 +199,17 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                             .into(messageImageView);
                 }
                 messageImageView.setVisibility(ImageView.VISIBLE);
-                messageTextView.setVisibility(TextView.GONE);
             }
         }
 
         private void handleVideo() {
+            makeAllGone();
             openVideoButton.setVisibility(Button.VISIBLE);
-            messageTextView.setVisibility(TextView.GONE);
         }
 
         private void handleAudio() {
+            makeAllGone();
             playAudioButton.setVisibility(Button.VISIBLE);
-            messageTextView.setVisibility(TextView.GONE);
         }
     }
 }
