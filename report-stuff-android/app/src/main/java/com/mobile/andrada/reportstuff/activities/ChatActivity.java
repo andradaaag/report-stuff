@@ -64,7 +64,6 @@ public class ChatActivity extends AppCompatActivity implements
     public static final String CHAT_MSG_LENGTH = "chat_msg_length";
     public static final String EXTRA_MEDIA_URI = "extra_media_uri";
     public static final String IS_OFFICIAL = "is_official";
-    public static final String MEDIA_URL_FIELD = "mediaUrl";
     public static final String MESSAGES_CHILD = "messages";
     public final static String REPORT_ID = "report_id";
     public static final String REPORTS_CHILD = "reports";
