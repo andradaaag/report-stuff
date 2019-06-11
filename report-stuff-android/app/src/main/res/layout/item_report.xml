@@ -2,26 +2,28 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:layout_marginLeft="16dp"
+    android:layout_marginTop="16dp"
     android:layout_marginRight="16dp"
-    android:layout_marginTop="16dp">
-
-    <TextView
-        android:id="@+id/locationTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="76B Marbles Street" />
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/citizenNameTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Margaret Miller" />
+        android:text="@string/margaret_miller"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+    <TextView
+        android:id="@+id/locationTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/_76b_marbles_street"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 
     <TextView
         android:id="@+id/dateTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="10 mins ago" />
+        android:text="@string/_10_mins_ago" />
 </LinearLayout>

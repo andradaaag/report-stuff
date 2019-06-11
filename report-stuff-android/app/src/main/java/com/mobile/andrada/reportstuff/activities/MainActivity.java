@@ -1,6 +1,7 @@
 package com.mobile.andrada.reportstuff.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
@@ -23,20 +24,20 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.iid.FirebaseInstanceId;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.OfficialRecord;
 import com.mobile.andrada.reportstuff.firestore.Report;
 import com.mobile.andrada.reportstuff.utils.Utils.Role;
 
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.IS_OFFICIAL;
 import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.STATUS_OPEN;
 import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
@@ -66,14 +67,17 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser mFirebaseUser;
     private FirebaseFirestore mFirestore;
 
-    @BindView(R.id.newReportsButton)
-    Button newReportsButton;
-
     @BindView(R.id.activeReportsButton)
     Button activeReportsButton;
 
+    @BindView(R.id.askForHelpButton)
+    Button askForHelpButton;
+
     @BindView(R.id.closedReportsButton)
     Button closedReportsButton;
+
+    @BindView(R.id.newReportsButton)
+    Button newReportsButton;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -82,18 +86,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        // Initialize location provider
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Initialize Firestore
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
 
-        // Initialize FirebaseAuth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
-        // Handle flow based on user role
         if (mFirebaseUser == null) {
             startActivity(new Intent(this, SignInActivity.class));
             finish();
@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                     startSendingOfficialLocationToFirestore();
                     startLocationUpdates();
                 }
-            }).addOnFailureListener(exception-> Log.e(TAG, exception.getMessage()));
+            }).addOnFailureListener(exception -> Log.e(TAG, exception.getMessage()));
         }
     }
 
@@ -128,12 +128,15 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 Location location = locationResult.getLastLocation();
-                sendOfficialLocationToFirestore(location);
+                sendOfficialLocationAndTokenToFirestore(location);
             }
         };
     }
 
-    private void sendOfficialLocationToFirestore(Location location) {
+    private void sendOfficialLocationAndTokenToFirestore(Location location) {
+        SharedPreferences preferences = getSharedPreferences("FCM_TOKEN", MODE_PRIVATE);
+        String token = preferences.getString("token", "");
+
         CollectionReference officials = mFirestore.collection("officials");
         officials.whereEqualTo("officialId", mUid)
                 .get()
@@ -141,19 +144,12 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         List<DocumentSnapshot> snapshots = task.getResult().getDocuments();
                         if (snapshots.size() > 0) {
-                            // Update existing official record
-                            officials.document(snapshots.get(0).getId()).update("location", convertLocation(location));
+                            officials.document(snapshots.get(0).getId()).update(
+                                    "location", convertLocation(location),
+                                    "fcmToken", token
+                            );
                         } else {
-                            // Retrieve fcmToken and create new official record
-                            FirebaseInstanceId.getInstance().getInstanceId()
-                                    .addOnCompleteListener(task2 -> {
-                                        if (!task2.isSuccessful()) {
-                                            Log.w(TAG, "getInstanceId failed", task2.getException());
-                                            return;
-                                        }
-                                        String token = task2.getResult().getToken();
-                                        officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, convertLocation(location), mUid, mRole.toString()));
-                                    });
+                            officials.add(new OfficialRecord(mFirebaseUser.getEmail(), token, convertLocation(location), mUid, mRole.toString()));
                         }
                     }
                 });
@@ -182,56 +178,62 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void showCitizenUI() {
-        // Check if citizen has active report
+        askForHelpButton.setVisibility(Button.VISIBLE);
+        askForHelpButton.setOnClickListener(v -> askForHelpOnClick());
+    }
+
+    private void askForHelpOnClick() {
+        // Check if citizen has active report and either create one or directly open chat
         mFirestore.collection("reports")
-                .whereArrayContains("activeUsers", mFirebaseUser.getEmail())
-                .limit(1).get().addOnCompleteListener(task -> {
+                .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
+                .whereEqualTo("status", "open")
+                .get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
-                for(DocumentSnapshot report : reports){
-                    String status = (String) report.get("status");
-                    if(status.contains("closed"))
-                        reports.remove(report);
-                }
                 if (reports.size() > 0) {
-                    // If citizen has report, open chat
                     mReportID = reports.get(0).getId();
                     openChat();
                 } else {
-                    // There is no report for this citizen, create a new one
-                    if (!checkForLocationPermission(this)) {
-                        return;
-                    }
-                    fusedLocationClient.getLastLocation()
-                            .addOnSuccessListener(this, location -> {
-                                Report report = new Report(
-                                        Collections.singletonList(mFirebaseUser.getEmail()),
-                                        mFirebaseUser.getDisplayName(),
-                                        convertLocation(location),
-                                        Calendar.getInstance().getTime(),
-                                        null,
-                                        "new"
-                                );
-                                mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
-                                    if (task1.isSuccessful()) {
-                                        DocumentReference reportReference = task1.getResult();
-                                        mReportID = reportReference.getId();
-                                        openChat();
-                                    }
-                                });
-                            });
+                    createReportForCitizen();
                 }
+            } else {
+                Log.e(TAG, "Error: " + task.getException());
             }
         });
+    }
+
+    private void createReportForCitizen() {
+        if (!checkForLocationPermission(this)) {
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    Report report = new Report(
+                            null,
+                            mFirebaseUser.getDisplayName(),
+                            mFirebaseUser.getEmail(),
+                            convertLocation(location),
+                            Calendar.getInstance().getTime(),
+                            null,
+                            "open"
+                    );
+                    mFirestore.collection("reports").add(report).addOnCompleteListener(task1 -> {
+                        if (task1.isSuccessful()) {
+                            DocumentReference reportReference = task1.getResult();
+                            mReportID = reportReference.getId();
+                            openChat();
+                        }
+                    });
+                });
     }
 
     private void openChat() {
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra(REPORT_ID, mReportID);
+        intent.putExtra(IS_OFFICIAL, false);
+        intent.putExtra(REPORTS_STATUS, STATUS_OPEN);
         startActivityForResult(intent, ENTER_CHAT);
-        finish();
     }
 
     @Override
@@ -244,6 +246,9 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this,
                         "Permissions for location needed in order to automatically send it to rescuers.",
                         Toast.LENGTH_LONG).show();
+            }
+            if (mRole != null && mRole == Role.citizen) {
+                createReportForCitizen();
             }
         }
     }
@@ -267,12 +272,21 @@ public class MainActivity extends AppCompatActivity {
         checkForLocationPermission(this);
         fusedLocationClient.requestLocationUpdates(locationRequest,
                 locationCallback,
-                null /* Looper */);
+                null);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        startLocationUpdates();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ENTER_CHAT) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "Returned from chat");
+            }
+        }
     }
 }

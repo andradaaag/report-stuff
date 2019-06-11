@@ -1,14 +1,8 @@
 package com.mobile.andrada.reportstuff.utils;
 
-import android.content.Context;
-import android.location.Address;
-import android.location.Geocoder;
+import org.ocpsoft.prettytime.PrettyTime;
 
-import com.google.firebase.firestore.GeoPoint;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
+import java.util.Date;
 
 public class Utils {
     public enum Role {
@@ -18,23 +12,8 @@ public class Utils {
         smurd
     }
 
-    public static String convertGeoPointToAdress(Context context, GeoPoint geoPoint) {
-        if (geoPoint == null)
-            return "";
-
-        Geocoder geoCoder = new Geocoder(context, Locale.getDefault());
-        try {
-            List<Address> addresses = geoCoder.getFromLocation(
-                    geoPoint.getLatitude(),
-                    geoPoint.getLongitude(),
-                    1);
-
-            if (addresses.size() > 0) {
-                return addresses.get(0).getAddressLine(0);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "";
+    public static String prettyTime(Date date){
+        PrettyTime p = new PrettyTime();
+        return p.format(date);
     }
 }

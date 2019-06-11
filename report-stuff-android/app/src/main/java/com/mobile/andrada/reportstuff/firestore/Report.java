@@ -6,32 +6,34 @@ import java.util.Date;
 import java.util.List;
 
 public class Report {
-    private List<String> activeUsers;
+    private List<String> activeOfficials;
     private String citizenName;
+    private String citizenEmail;
     private GeoPoint latestLocation;
     private Date latestTime;
-    private List<String> openedBy;
+    private List<String> notifiedOfficials;
     private String status;
     private String rid;
 
     public Report() {
     }
 
-    public Report(List<String> activeUsers, String citizenName, GeoPoint latestLocation, Date latestTime, List<String> openedBy, String status) {
-        this.activeUsers = activeUsers;
+    public Report(List<String> activeOfficials, String citizenName, String citizenEmail, GeoPoint latestLocation, Date latestTime, List<String> notifiedOfficials, String status) {
+        this.activeOfficials = activeOfficials;
         this.citizenName = citizenName;
+        this.citizenEmail = citizenEmail;
         this.latestLocation = latestLocation;
         this.latestTime = latestTime;
-        this.openedBy = openedBy;
+        this.notifiedOfficials = notifiedOfficials;
         this.status = status;
     }
 
-    public List<String> getActiveUsers() {
-        return activeUsers;
+    public List<String> getActiveOfficials() {
+        return activeOfficials;
     }
 
-    public void setActiveUsers(List<String> activeUsers) {
-        this.activeUsers = activeUsers;
+    public void setActiveOfficials(List<String> activeOfficials) {
+        this.activeOfficials = activeOfficials;
     }
 
     public String getCitizenName() {
@@ -58,12 +60,12 @@ public class Report {
         this.latestTime = latestTime;
     }
 
-    public List<String> getOpenedBy() {
-        return openedBy;
+    public List<String> getNotifiedOfficials() {
+        return notifiedOfficials;
     }
 
-    public void setOpenedBy(List<String> openedBy) {
-        this.openedBy = openedBy;
+    public void setNotifiedOfficials(List<String> notifiedOfficials) {
+        this.notifiedOfficials = notifiedOfficials;
     }
 
     public String getStatus() {
@@ -74,23 +76,33 @@ public class Report {
         this.status = status;
     }
 
-    @Override
-    public String toString() {
-        return "Report{" +
-                "activeUsers=" + activeUsers +
-                ", citizenName='" + citizenName + '\'' +
-                ", latestLocation='" + latestLocation + '\'' +
-                ", latestTime=" + latestTime +
-                ", openedBy=" + openedBy +
-                ", status='" + status + '\'' +
-                '}';
-    }
-
     public String getRid() {
         return rid;
     }
 
     public void setRid(String rid) {
         this.rid = rid;
+    }
+
+    public String getCitizenEmail() {
+        return citizenEmail;
+    }
+
+    public void setCitizenEmail(String citizenEmail) {
+        this.citizenEmail = citizenEmail;
+    }
+
+    @Override
+    public String toString() {
+        return "Report{" +
+                "activeOfficials=" + activeOfficials +
+                ", citizenName='" + citizenName + '\'' +
+                ", citizenEmail='" + citizenEmail + '\'' +
+                ", latestLocation=" + latestLocation +
+                ", latestTime=" + latestTime +
+                ", notifiedOfficials=" + notifiedOfficials +
+                ", status='" + status + '\'' +
+                ", rid='" + rid + '\'' +
+                '}';
     }
 }

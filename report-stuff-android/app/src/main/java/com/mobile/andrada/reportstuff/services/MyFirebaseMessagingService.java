@@ -3,29 +3,23 @@ package com.mobile.andrada.reportstuff.services;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.mobile.andrada.reportstuff.R;
 
-import java.util.List;
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-
-    private FirebaseAuth mFirebaseAuth;
-    private FirebaseUser mFirebaseUser;
-    private FirebaseFirestore mFirestore;
     private static final String TAG = "MyFMService";
+
+    public MyFirebaseMessagingService() {
+    }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -71,26 +65,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         super.onNewToken(s);
         Log.d("NEW_TOKEN", s);
 
-        FirebaseFirestore.setLoggingEnabled(true);
-        mFirestore = FirebaseFirestore.getInstance();
+        saveTokenToSharedPreferences(s);
+    }
 
-        mFirebaseAuth = FirebaseAuth.getInstance();
-        mFirebaseUser = mFirebaseAuth.getCurrentUser();
-
-        if (mFirebaseUser == null)
-            return;
-        CollectionReference officials = mFirestore.collection("officials");
-        officials.whereEqualTo("officialId", mFirebaseUser.getUid())
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<DocumentSnapshot> snapshots = task.getResult().getDocuments();
-                        if (snapshots.size() > 0) {
-                            // Update existing official record
-                            officials.document(snapshots.get(0).getId()).update("fcmToken", s);
-                        }
-                    }
-                });
-
+    public void saveTokenToSharedPreferences(String token) {
+        SharedPreferences.Editor editor = getSharedPreferences("FCM_TOKEN", MODE_PRIVATE).edit();
+        if (token != null) {
+            editor.putString("token", token);
+            editor.apply();
+        }
     }
 }
