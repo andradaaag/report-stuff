@@ -167,7 +167,11 @@ exports.sendInitialNotificationToPolicemen = functions.firestore.document('repor
         const reportId = context.params.reportId;
         const role = "policeman";
 
-        return sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role)
+        const promises = [];
+        promises.push(sendBotMessage(reportId, "The nearest policeman teams were notified of your emergency." +
+            " Please describe it using text, images, audio or video recordings.", newReport.latestTime));
+        promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role));
+        return Promise.all(promises);
     });
 
 exports.sendNotificationToOtherOfficials = functions.firestore.document('reports/{reportId}/messages/{messageId}')
