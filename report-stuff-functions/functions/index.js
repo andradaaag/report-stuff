@@ -111,11 +111,17 @@ exports.updateReport = functions.firestore.document('reports/{reportId}/messages
         const newMessage = snap.data();
         const email = newMessage.email;
         const reportId = context.params.reportId;
+
+        const isBot = await checkUserIsBot(email);
         const isOfficial = await checkUserIsOfficial(email);
-        console.log(isOfficial);
-        if (isOfficial) {
-            return updateReportWithActiveOfficials(reportId, email)
-        }
+
+        console.log("IsBot: " + isBot);
+        console.log("IsOfficial: " + isOfficial);
+
+        if (isBot)
+            return true;
+        if (isOfficial)
+            return updateReportWithActiveOfficials(reportId, email);
         return updateReportWithLocationAndTimestamp(reportId, newMessage.time, newMessage.location)
     });
 
