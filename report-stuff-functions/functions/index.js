@@ -6,6 +6,32 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 
+exports.makeBot = functions.https.onCall((data, context) => {
+    // Commented for development purposes
+    // if (context.auth.token.policeman !== true) {
+    //     return {
+    //         error: "Request not authorized. User must be a policeman to fulfill request."
+    //     };
+    // }
+    const email = data.email;
+    return grantBotRole(email).then(() => {
+        return {
+            result: `Request fulfilled! ${email} is now a bot.`
+        };
+    });
+});
+
+async function grantBotRole(email) {
+    const user = await admin.auth().getUserByEmail(email);
+    if (user.customClaims && user.customClaims.bot === true) {
+        return false;
+    }
+    return admin.auth().setCustomUserClaims(user.uid, {
+        bot: true
+    });
+}
+
+
 exports.makePoliceman = functions.https.onCall((data, context) => {
     // Commented for development purposes
     // if (context.auth.token.policeman !== true) {
@@ -118,6 +144,7 @@ async function checkUserIsOfficial(email) {
         user.customClaims.policeman === true
         || user.customClaims.firefighter === true
         || user.customClaims.smurd === true
+        || user.customClaims.bot === true
     ));
 }
 
@@ -125,6 +152,12 @@ exports.sendInitialNotificationToPolicemen = functions.firestore.document('repor
     .onCreate(async (snap, context) => {
         const newReport = snap.data();
         const citizenEmail = newReport.citizenEmail;
+
+        const isOfficial = await checkUserIsOfficial(citizenEmail);
+        console.log("Is official: " + isOfficial);
+        if (isOfficial)
+            return void callback();
+
         const citizenLocation = newReport.latestLocation;
         const citizenName = newReport.citizenName;
         const radius = 5000; // Radius of 5km (or 5000m)
@@ -138,6 +171,12 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
     .onCreate(async (snap, context) => {
         const newMessage = snap.data();
         const citizenEmail = newMessage.email;
+
+        const isOfficial = await checkUserIsOfficial(email);
+        console.log("Is official: " + isOfficial);
+        if (isOfficial)
+            return void callback();
+
         const citizenLocation = newMessage.location;
         const citizenName = newMessage.name;
         const radius = 5000; // Radius of 5km (or 5000m)
@@ -147,7 +186,15 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
 
         const promises = [];
         roles.forEach(role => {
-            promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role))
+            promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role));
+            promises.push(admin.firestore().collection("reports").doc(reportId).collection("messages").add({
+                email: "botreportstuff@gmail.com",
+                mediaType: "text",
+                name: "Bot Report",
+                photoUrl: "gs://bot/bot_picture.png",
+                text: "Notified " + role,
+                time: Date.now()
+            }))
         });
         return Promise.all(promises);
     });
@@ -215,7 +262,7 @@ async function handleImage(mediaUrl) {
 
 async function sendNotificationToRoleNearby(email, location, name, radius, reportId, role) {
     const isOfficial = await checkUserIsOfficial(email);
-    console.log(isOfficial);
+    console.log("Is official: " + isOfficial);
     if (isOfficial)
         return void callback();
 
