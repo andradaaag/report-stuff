@@ -190,14 +190,7 @@ exports.sendNotificationToOtherOfficials = functions.firestore.document('reports
         const promises = [];
         roles.forEach(role => {
             promises.push(sendNotificationToRoleNearby(citizenEmail, citizenLocation, citizenName, radius, reportId, role));
-            promises.push(admin.firestore().collection("reports").doc(reportId).collection("messages").add({
-                email: "botreportstuff@gmail.com",
-                mediaType: "text",
-                name: "Bot Report",
-                photoUrl: "gs://bot/bot_picture.png",
-                text: "Notified " + role,
-                time: Date.now()
-            }))
+            promises.push(sendBotMessage(reportId, "The nearest " + role + " teams were notified of your emergency.", newMessage.time))
         });
         return Promise.all(promises);
     });
