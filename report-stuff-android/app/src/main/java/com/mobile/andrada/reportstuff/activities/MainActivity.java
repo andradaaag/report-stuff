@@ -35,7 +35,9 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.IS_OFFICIAL;
 import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.STATUS_OPEN;
 import static com.mobile.andrada.reportstuff.activities.ReportsListActivity.REPORTS_STATUS;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.convertLocation;
@@ -65,14 +67,17 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser mFirebaseUser;
     private FirebaseFirestore mFirestore;
 
-    @BindView(R.id.newReportsButton)
-    Button newReportsButton;
-
     @BindView(R.id.activeReportsButton)
     Button activeReportsButton;
 
+    @BindView(R.id.askForHelpButton)
+    Button askForHelpButton;
+
     @BindView(R.id.closedReportsButton)
     Button closedReportsButton;
+
+    @BindView(R.id.newReportsButton)
+    Button newReportsButton;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -81,18 +86,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        // Initialize location provider
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Initialize Firestore
         FirebaseFirestore.setLoggingEnabled(true);
         mFirestore = FirebaseFirestore.getInstance();
 
-        // Initialize FirebaseAuth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
-        // Handle flow based on user role
         if (mFirebaseUser == null) {
             startActivity(new Intent(this, SignInActivity.class));
             finish();
@@ -177,19 +178,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void showCitizenUI() {
-        // Check if citizen has active report
+        askForHelpButton.setVisibility(Button.VISIBLE);
+        askForHelpButton.setOnClickListener(v -> askForHelpOnClick());
+    }
+
+    private void askForHelpOnClick() {
+        // Check if citizen has active report and either create one or directly open chat
         mFirestore.collection("reports")
                 .whereEqualTo("citizenEmail", mFirebaseUser.getEmail())
-                .limit(1).get().addOnCompleteListener(task -> {
+                .whereEqualTo("status", "open")
+                .get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<DocumentSnapshot> reports = task.getResult().getDocuments();
-                for (DocumentSnapshot report : reports) {
-                    String status = (String) report.get("status");
-                    if (status.contains("closed"))
-                        reports.remove(report);
-                }
                 if (reports.size() > 0) {
                     mReportID = reports.get(0).getId();
                     openChat();
@@ -230,8 +231,9 @@ public class MainActivity extends AppCompatActivity {
     private void openChat() {
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra(REPORT_ID, mReportID);
+        intent.putExtra(IS_OFFICIAL, false);
+        intent.putExtra(REPORTS_STATUS, STATUS_OPEN);
         startActivityForResult(intent, ENTER_CHAT);
-        finish();
     }
 
     @Override
@@ -270,12 +272,21 @@ public class MainActivity extends AppCompatActivity {
         checkForLocationPermission(this);
         fusedLocationClient.requestLocationUpdates(locationRequest,
                 locationCallback,
-                null /* Looper */);
+                null);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        startLocationUpdates();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ENTER_CHAT) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "Returned from chat");
+            }
+        }
     }
 }

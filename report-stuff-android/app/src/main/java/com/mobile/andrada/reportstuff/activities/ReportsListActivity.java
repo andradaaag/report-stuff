@@ -36,33 +36,37 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.ReportAdapter;
 import com.mobile.andrada.reportstuff.firestore.Report;
+import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.IS_OFFICIAL;
+import static com.mobile.andrada.reportstuff.activities.ChatActivity.REPORT_ID;
 import static com.mobile.andrada.reportstuff.utils.LocationHelper.checkForLocationPermission;
 
 public class ReportsListActivity extends AppCompatActivity implements
         ReportAdapter.OnItemClickListener, OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
     private static final int ENTER_CHAT = 1;
+
     public static final String REPORTS_STATUS = "reports_status";
-    public final static String TAG = "ReportsListActivity";
+    private static final String TAG = "ReportsListActivity";
+
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private FirebaseFirestore mFirestore;
     private ReportAdapter mAdapter;
     private Query mQuery;
-    private String mReportsStatus;
 
+    private String mReportsStatus;
     private FusedLocationProviderClient fusedLocationClient;
+    private GoogleMap mGoogleMap;
 
     private boolean mListViewVisibility = true;
     private boolean mMapViewVisibility = false;
 
     @BindView(R.id.reportRecyclerView)
     RecyclerView mReportsRecyclerView;
-
-    GoogleMap mGoogleMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,12 +81,10 @@ public class ReportsListActivity extends AppCompatActivity implements
             actionBar.setDisplayShowHomeEnabled(true);
         }
 
-        // Initialize Firebase Auth
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseUser = mFirebaseAuth.getCurrentUser();
 
         if (mFirebaseUser == null) {
-            // Not signed in, launch the Sign In activity
             startActivity(new Intent(this, SignInActivity.class));
             finish();
             return;
@@ -95,7 +97,6 @@ public class ReportsListActivity extends AppCompatActivity implements
         mQuery = mFirestore.collection("reports");
 
         String email = mFirebaseUser.getEmail();
-        //TODO: mReportsCollectionReference
         switch (mReportsStatus) {
             case "new":
                 mQuery = mQuery.whereEqualTo("status", "open")
@@ -128,9 +129,7 @@ public class ReportsListActivity extends AppCompatActivity implements
 
             @Override
             protected void onError(FirebaseFirestoreException e) {
-                // Show a snackbar on errors
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Error: check logs for info.", Snackbar.LENGTH_LONG).show();
+                Log.e(TAG, "Error: " + e.getMessage());
             }
         };
 
@@ -139,8 +138,6 @@ public class ReportsListActivity extends AppCompatActivity implements
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.reportsMapView);
         mapFragment.getMapAsync(this);
-//        mMapView.onCreate(savedInstanceState);
-//        mMapView.getMapAsync(this);
 
         mReportsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mReportsRecyclerView.setHasFixedSize(true);
@@ -176,7 +173,6 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Integer itemId = item.getItemId();
         switch (item.getItemId()) {
             case android.R.id.home:
                 NavUtils.navigateUpTo(this, new Intent(this, MainActivity.class));
@@ -233,7 +229,7 @@ public class ReportsListActivity extends AppCompatActivity implements
                                     report.getLatestLocation().getLatitude(),
                                     report.getLatestLocation().getLongitude()
                             )).title(report.getCitizenName())
-                            .snippet(report.getLatestTime().toString()));
+                            .snippet(Utils.prettyTime(report.getLatestTime())));
                     marker.setTag(doc.getId());
                     marker.showInfoWindow();
                 });
@@ -297,8 +293,9 @@ public class ReportsListActivity extends AppCompatActivity implements
 
     public void openChatForReport(String reportID) {
         Intent intent = new Intent(ReportsListActivity.this, ChatActivity.class);
-        intent.putExtra(ChatActivity.REPORT_ID, reportID);
+        intent.putExtra(REPORT_ID, reportID);
         intent.putExtra(REPORTS_STATUS, mReportsStatus);
+        intent.putExtra(IS_OFFICIAL, true);
         startActivityForResult(intent, ENTER_CHAT);
     }
 }

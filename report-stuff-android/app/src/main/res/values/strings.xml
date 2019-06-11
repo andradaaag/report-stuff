@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">Report Stuff</string>
+    <string name="ask_for_help">Ask For Help</string>
+    <string name="closed_reports">Closed Reports</string>
+    <string name="active_reports">Active Reports</string>
+    <string name="new_reports">New Reports</string>
+    <string name="_10_mins_ago">10 mins ago</string>
+    <string name="_76b_marbles_street">76B Marbles Street</string>
+    <string name="margaret_miller">Margaret Miller</string>
+    <string name="click_to_open_video">Click to open video</string>
+    <string name="message_image_view">Image added by user</string>
+    <string name="play_audio_button">play audio button</string>
+    <string name="pause_audio_button">pause audio button</string>
+    <string name="stop_audio_button">stop audio button</string>
+    <string name="send">SEND</string>
+    <string name="select_media">select media</string>
+    <string name="please_sign_in_for_using_this_app">Please sign in with Google for using this app (:</string>
 </resources>

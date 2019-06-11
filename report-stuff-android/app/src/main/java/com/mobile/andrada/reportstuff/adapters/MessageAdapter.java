@@ -1,7 +1,6 @@
 package com.mobile.andrada.reportstuff.adapters;
 
 import android.content.res.Resources;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -13,8 +12,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
@@ -22,16 +19,13 @@ import com.google.firebase.storage.StorageReference;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.activities.ChatActivity;
 import com.mobile.andrada.reportstuff.firestore.Message;
+import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import de.hdodenhof.circleimageview.CircleImageView;
 
-/**
- * RecyclerView adapter for a list of Messages.
- */
 public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> {
-//    ProgressBar mProgressBar;
 
     public interface OnMessagePlayClickedListener {
 
@@ -53,7 +47,6 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-//        mProgressBar = parent.findViewById(R.id.progressBar);
         return new ViewHolder(inflater.inflate(R.layout.item_message, parent, false));
     }
 
@@ -96,48 +89,39 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
         }
 
         void bind(final DocumentSnapshot snapshot, final OnMessagePlayClickedListener listener) {
-//            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-            message = snapshot.toObject(Message.class);
-            openVideoButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (listener != null) {
-                        listener.onOpenVideoClicked(snapshot);
-                    }
+            try {
+                message = snapshot.toObject(Message.class);
+            } catch (Exception e) {
+                Log.e("MessageAdapter", "Error when casting to Message class" + e.getMessage());
+            }
+            openVideoButton.setOnClickListener(view -> {
+                if (listener != null) {
+                    listener.onOpenVideoClicked(snapshot);
                 }
             });
-            playAudioButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (listener != null) {
-                        listener.onPlayAudioClicked(snapshot);
-                    }
-                    pauseAudioButton.setVisibility(Button.VISIBLE);
-                    stopAudioButton.setVisibility(Button.VISIBLE);
-                    playAudioButton.setVisibility(Button.GONE);
+            playAudioButton.setOnClickListener(view -> {
+                if (listener != null) {
+                    listener.onPlayAudioClicked(snapshot);
                 }
+                pauseAudioButton.setVisibility(Button.VISIBLE);
+                stopAudioButton.setVisibility(Button.VISIBLE);
+                playAudioButton.setVisibility(Button.GONE);
             });
-            pauseAudioButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (listener != null) {
-                        listener.onPauseAudioClicked(snapshot);
-                    }
-                    playAudioButton.setVisibility(Button.VISIBLE);
-                    stopAudioButton.setVisibility(Button.VISIBLE);
-                    pauseAudioButton.setVisibility(Button.GONE);
+            pauseAudioButton.setOnClickListener(view -> {
+                if (listener != null) {
+                    listener.onPauseAudioClicked(snapshot);
                 }
+                playAudioButton.setVisibility(Button.VISIBLE);
+                stopAudioButton.setVisibility(Button.VISIBLE);
+                pauseAudioButton.setVisibility(Button.GONE);
             });
-            stopAudioButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (listener != null) {
-                        listener.onStopAudioClicked(snapshot);
-                    }
-                    playAudioButton.setVisibility(Button.VISIBLE);
-                    pauseAudioButton.setVisibility(Button.GONE);
-                    stopAudioButton.setVisibility(Button.GONE);
+            stopAudioButton.setOnClickListener(view -> {
+                if (listener != null) {
+                    listener.onStopAudioClicked(snapshot);
                 }
+                playAudioButton.setVisibility(Button.VISIBLE);
+                pauseAudioButton.setVisibility(Button.GONE);
+                stopAudioButton.setVisibility(Button.GONE);
             });
 
             handleMessenger();
@@ -162,7 +146,8 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
 
         private void handleMessenger() {
             Resources resources = itemView.getResources();
-            messengerTextView.setText(message.getName());
+            String text = message.getName() + " • " + Utils.prettyTime(message.getTime());
+            messengerTextView.setText(text);
             if (message.getPhotoUrl() == null) {
                 messengerImageView.setImageDrawable(resources.getDrawable(R.drawable.ic_account_circle_black));
             } else {
@@ -186,18 +171,15 @@ public class MessageAdapter extends FirestoreAdapter<MessageAdapter.ViewHolder> 
                     StorageReference storageReference = FirebaseStorage.getInstance()
                             .getReferenceFromUrl(imageUrl);
                     storageReference.getDownloadUrl().addOnCompleteListener(
-                            new OnCompleteListener<Uri>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Uri> task) {
-                                    if (task.isSuccessful()) {
-                                        String downloadUrl = task.getResult().toString();
-                                        Glide.with(messageImageView.getContext())
-                                                .load(downloadUrl)
-                                                .into(messageImageView);
-                                    } else {
-                                        Log.w(ChatActivity.TAG, "Getting download url was not successful.",
-                                                task.getException());
-                                    }
+                            task -> {
+                                if (task.isSuccessful()) {
+                                    String downloadUrl = task.getResult().toString();
+                                    Glide.with(messageImageView.getContext())
+                                            .load(downloadUrl)
+                                            .into(messageImageView);
+                                } else {
+                                    Log.w(ChatActivity.TAG, "Getting download url was not successful.",
+                                            task.getException());
                                 }
                             });
                 } else {

@@ -17,11 +17,11 @@
             tools:listitem="@layout/item_report" />
 
         <fragment
+            android:id="@+id/reportsMapView"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/reportsMapView"
-            tools:context=".MapsActivity"
-            android:name="com.google.android.gms.maps.SupportMapFragment" />
+            tools:context=".MapsActivity" />
     </ViewSwitcher>
 
 </android.support.design.widget.CoordinatorLayout>

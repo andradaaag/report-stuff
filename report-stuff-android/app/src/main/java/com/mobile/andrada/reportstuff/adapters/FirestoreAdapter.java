@@ -15,11 +15,11 @@ import java.util.ArrayList;
 
 /**
  * RecyclerView adapter for displaying the results of a Firestore {@link Query}.
- *
+ * <p>
  * Note that this class forgoes some efficiency to gain simplicity. For example, the result of
  * {@link DocumentSnapshot#toObject(Class)} is not cached so the same object may be deserialized
  * many times as the user scrolls.
- *
+ * <p>
  * See the adapter classes in FirebaseUI (https://github.com/firebase/FirebaseUI-Android/tree/master/firestore) for a
  * more efficient implementation of a Firestore RecyclerView Adapter.
  */
@@ -57,7 +57,7 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
         // Stop listening
         stopListening();
 
-        // Clear existinkodig data
+        // Clear existing data
         mSnapshots.clear();
         notifyDataSetChanged();
 
@@ -97,12 +97,12 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
         onDataChanged();
     }
 
-    protected void onDocumentAdded(DocumentChange change) {
+    private void onDocumentAdded(DocumentChange change) {
         mSnapshots.add(change.getNewIndex(), change.getDocument());
         notifyItemInserted(change.getNewIndex());
     }
 
-    protected void onDocumentModified(DocumentChange change) {
+    private void onDocumentModified(DocumentChange change) {
         if (change.getOldIndex() == change.getNewIndex()) {
             // Item changed but remained in same position
             mSnapshots.set(change.getOldIndex(), change.getDocument());
@@ -115,7 +115,7 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
         }
     }
 
-    protected void onDocumentRemoved(DocumentChange change) {
+    private void onDocumentRemoved(DocumentChange change) {
         mSnapshots.remove(change.getOldIndex());
         notifyItemRemoved(change.getOldIndex());
     }
@@ -125,11 +125,13 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
         return mSnapshots.size();
     }
 
-    protected DocumentSnapshot getSnapshot(int index) {
+    DocumentSnapshot getSnapshot(int index) {
         return mSnapshots.get(index);
     }
 
-    protected void onError(FirebaseFirestoreException e) {};
+    protected void onError(FirebaseFirestoreException e) {
+    }
 
-    protected void onDataChanged() {}
+    protected void onDataChanged() {
+    }
 }
