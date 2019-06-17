@@ -365,7 +365,7 @@ public class ChatActivity extends AppCompatActivity implements
                                         })
                         ).addOnFailureListener(
                                 e ->
-                                        Log.w(TAG, "Image upload task was not successful.", e)
+                                        Log.w(TAG, "Retrieving download URL from storage was not successful.", e)
                         );
                     }
                 }

@@ -13,7 +13,6 @@ public class Report {
     private Date latestTime;
     private List<String> notifiedOfficials;
     private String status;
-    private String rid;
 
     public Report() {
     }
@@ -76,14 +75,6 @@ public class Report {
         this.status = status;
     }
 
-    public String getRid() {
-        return rid;
-    }
-
-    public void setRid(String rid) {
-        this.rid = rid;
-    }
-
     public String getCitizenEmail() {
         return citizenEmail;
     }
@@ -102,7 +93,6 @@ public class Report {
                 ", latestTime=" + latestTime +
                 ", notifiedOfficials=" + notifiedOfficials +
                 ", status='" + status + '\'' +
-                ", rid='" + rid + '\'' +
                 '}';
     }
 }
