@@ -12,6 +12,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.firestore.Report;
+import com.mobile.andrada.reportstuff.firestore.ReportItem;
 import com.mobile.andrada.reportstuff.utils.LocationHelper;
 import com.mobile.andrada.reportstuff.utils.Utils;
 
@@ -23,7 +24,7 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
     private Context context;
 
     public interface OnItemClickListener {
-        void onItemClick(Report report);
+        void onItemClick(ReportItem report);
     }
 
     protected ReportAdapter(Query query, OnItemClickListener onClickListener) {
@@ -45,7 +46,7 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
-        Report report;
+        ReportItem report;
 
         @BindView(R.id.citizenNameTextView)
         TextView citizenNameTextView;
@@ -63,7 +64,8 @@ public class ReportAdapter extends FirestoreAdapter<ReportAdapter.ViewHolder> {
         }
 
         void bind(final DocumentSnapshot snapshot, Context context) {
-            report = snapshot.toObject(Report.class);
+            Report firebaseReport = snapshot.toObject(Report.class);
+            report = new ReportItem(firebaseReport);
             report.setRid(snapshot.getId());
 
             citizenNameTextView.setText(report.getCitizenName());

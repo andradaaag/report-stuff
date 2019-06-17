@@ -36,6 +36,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.mobile.andrada.reportstuff.R;
 import com.mobile.andrada.reportstuff.adapters.ReportAdapter;
 import com.mobile.andrada.reportstuff.firestore.Report;
+import com.mobile.andrada.reportstuff.firestore.ReportItem;
 import com.mobile.andrada.reportstuff.utils.Utils;
 
 import butterknife.BindView;
@@ -287,7 +288,7 @@ public class ReportsListActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onItemClick(Report report) {
+    public void onItemClick(ReportItem report) {
         openChatForReport(report.getRid());
     }
 
